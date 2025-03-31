@@ -17,6 +17,15 @@ interface UserDetailStatsProps {
   userData: AggregatedUserData;
 }
 
+// Define the props interface for StatCard
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  icon: React.ReactNode;
+  data?: any[];
+  description?: string;
+}
+
 const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [dialogData, setDialogData] = useState<{
@@ -78,8 +87,8 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
   const groupCommentsTimeline = useMemo(() => prepareTimelineData([], 'commented_at'), []);
   const pageCommentsTimeline = useMemo(() => prepareTimelineData([], 'commented_at'), []);
 
-  // Memoized StatCard component for better performance
-  const StatCard = React.memo(({ title, value, icon, data = [], description = '' }) => (
+  // Memoized StatCard component for better performance - now with proper type definition
+  const StatCard = React.memo<StatCardProps>(({ title, value, icon, data = [], description = '' }) => (
     <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatClick(title, data, description)}>
       <CardContent className="p-6 flex items-center justify-between">
         <div>
