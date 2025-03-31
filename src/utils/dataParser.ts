@@ -1,5 +1,4 @@
-
-import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile, UIDSource } from '../types';
+import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile, UIDSource, DataSourceType } from '../types';
 import * as XLSX from 'xlsx';
 
 export async function readExcelFile(file: File): Promise<UploadedFile | null> {
@@ -24,7 +23,8 @@ export async function readExcelFile(file: File): Promise<UploadedFile | null> {
           rowCount: jsonData.length,
           processed: false,
           manualType: false,
-          uploadDate: new Date() // Add current timestamp
+          uploadDate: new Date(), // Add current timestamp
+          sourceType: DataSourceType.UID_PROFILE // Default source type, will be overridden if specified
         });
       } catch (error) {
         console.error("Error parsing Excel file:", error);
@@ -129,7 +129,8 @@ export function aggregateDataByUID(files: UploadedFile[]): AggregatedUserData[] 
       const source: UIDSource = {
         fileName: file.name,
         fileType: file.type,
-        timestamp: file.uploadDate
+        timestamp: file.uploadDate,
+        sourceType: file.sourceType // Include the source type
       };
       
       // Check if this source already exists to avoid duplicates
@@ -288,7 +289,8 @@ export function getAllSourcesFromData(aggregatedData: AggregatedUserData[]): UID
   
   aggregatedData.forEach(user => {
     user.sources.forEach(source => {
-      const key = `${source.fileName}-${source.fileType}`;
+      // Include the sourceType in the key to properly track different source types
+      const key = `${source.fileName}-${source.fileType}-${source.sourceType || ''}`;
       if (!uniqueSources.has(key)) {
         uniqueSources.set(key, source);
       }

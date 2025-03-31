@@ -21,10 +21,18 @@ export enum FacebookDataType {
   UNKNOWN = 'unknown'
 }
 
+// New enum for data source
+export enum DataSourceType {
+  UID_PROFILE = 'uid_profile',
+  PAGE = 'page',
+  GROUP = 'group'
+}
+
 export interface UIDSource {
   fileName: string;
   fileType: FacebookDataType;
   timestamp: Date;
+  sourceType?: DataSourceType; // Add source type to track where the UID came from
 }
 
 export interface AggregatedUserData {
@@ -56,6 +64,7 @@ export interface UploadedFile {
   processed: boolean;
   manualType?: boolean; // Track if type was manually selected
   uploadDate: Date; // Add upload date for each file
+  sourceType: DataSourceType; // Add source type for each file
 }
 
 export const FILE_TYPE_OPTIONS = [
@@ -72,4 +81,10 @@ export const FILE_TYPE_OPTIONS = [
   { value: FacebookDataType.EVENTS, label: 'Sự kiện đã tham gia' },
   { value: FacebookDataType.REACTIONS, label: 'Các biểu cảm (reaction)' },
   { value: FacebookDataType.UNKNOWN, label: 'Không xác định' }
+];
+
+export const DATA_SOURCE_OPTIONS = [
+  { value: DataSourceType.UID_PROFILE, label: 'Hồ sơ người dùng' },
+  { value: DataSourceType.PAGE, label: 'Trang' },
+  { value: DataSourceType.GROUP, label: 'Nhóm' }
 ];

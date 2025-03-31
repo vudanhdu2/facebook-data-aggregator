@@ -1,9 +1,9 @@
 
 import React, { useState, useRef } from 'react';
-import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
+import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle, Calendar, UserCircle, FileText, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS } from '@/types';
+import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA_SOURCE_OPTIONS } from '@/types';
 import { readExcelFile } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -37,6 +37,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFileType, setSelectedFileType] = useState<FacebookDataType | null>(null);
+  const [selectedSourceType, setSelectedSourceType] = useState<DataSourceType>(DataSourceType.UID_PROFILE);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -58,6 +59,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
           result.type = manualType;
           result.manualType = true;
         }
+        
+        // Add the source type to the file data
+        result.sourceType = selectedSourceType;
+        
         return result;
       }
     } catch (error) {
@@ -169,10 +174,44 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       description: `File "${files[fileIndex].name}" đã được cập nhật thành ${getFacebookDataTypeLabel(newType)}`
     });
   };
+  
+  const updateSourceType = (fileIndex: number, newSourceType: DataSourceType) => {
+    const updatedFiles = [...files];
+    updatedFiles[fileIndex] = {
+      ...updatedFiles[fileIndex],
+      sourceType: newSourceType
+    };
+    
+    setFiles(updatedFiles);
+    onFilesUploaded(updatedFiles);
+    
+    toast({
+      title: "Đã cập nhật nguồn dữ liệu",
+      description: `File "${files[fileIndex].name}" đã được cập nhật thành ${getDataSourceTypeLabel(newSourceType)}`
+    });
+  };
 
   const getFacebookDataTypeLabel = (type: FacebookDataType): string => {
     const option = FILE_TYPE_OPTIONS.find(opt => opt.value === type);
     return option ? option.label : 'Không xác định';
+  };
+  
+  const getDataSourceTypeLabel = (type: DataSourceType): string => {
+    const option = DATA_SOURCE_OPTIONS.find(opt => opt.value === type);
+    return option ? option.label : 'Hồ sơ người dùng';
+  };
+  
+  const getSourceTypeIcon = (sourceType: DataSourceType) => {
+    switch (sourceType) {
+      case DataSourceType.UID_PROFILE:
+        return <UserCircle className="h-3 w-3 mr-1" />;
+      case DataSourceType.PAGE:
+        return <FileText className="h-3 w-3 mr-1" />;
+      case DataSourceType.GROUP:
+        return <Users className="h-3 w-3 mr-1" />;
+      default:
+        return <UserCircle className="h-3 w-3 mr-1" />;
+    }
   };
 
   return (
@@ -180,12 +219,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Select
                 value={selectedFileType || undefined}
                 onValueChange={(value) => setSelectedFileType(value as FacebookDataType)}
               >
-                <SelectTrigger className="w-full sm:w-64">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Chọn loại dữ liệu (tùy chọn)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
@@ -197,11 +236,27 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                 </SelectContent>
               </Select>
               
+              <Select
+                value={selectedSourceType}
+                onValueChange={(value) => setSelectedSourceType(value as DataSourceType)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Chọn nguồn dữ liệu" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DATA_SOURCE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
               <Button
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isProcessing}
-                className="flex-1"
+                className="sm:col-span-2"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 Chọn file
@@ -250,6 +305,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                           <Calendar className="h-3 w-3 mr-1" />
                           <span>{format(file.uploadDate, 'dd/MM/yyyy HH:mm')}</span>
                         </div>
+                        <div className="flex items-center">
+                          {getSourceTypeIcon(file.sourceType)}
+                          <span>{getDataSourceTypeLabel(file.sourceType)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -270,6 +329,30 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                             key={option.value}
                             onClick={() => updateFileType(index, option.value)}
                             className={file.type === option.value ? "bg-primary/10" : ""}
+                          >
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full flex items-center">
+                            {getSourceTypeIcon(file.sourceType)}
+                            {getDataSourceTypeLabel(file.sourceType)}
+                          </span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Chọn nguồn dữ liệu</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {DATA_SOURCE_OPTIONS.map((option) => (
+                          <DropdownMenuItem 
+                            key={option.value}
+                            onClick={() => updateSourceType(index, option.value)}
+                            className={file.sourceType === option.value ? "bg-primary/10" : ""}
                           >
                             {option.label}
                           </DropdownMenuItem>
