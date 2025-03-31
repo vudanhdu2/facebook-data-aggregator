@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,8 +21,9 @@ import {
   PaginationPrevious
 } from "@/components/ui/pagination";
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, RefreshCw } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DataDialogProps {
   isOpen: boolean;
@@ -35,27 +36,55 @@ interface DataDialogProps {
 const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, description, data }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const itemsPerPage = 10;
+  const [filteredData, setFilteredData] = useState<any[]>([]);
+  const [paginatedData, setPaginatedData] = useState<any[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const itemsPerPage = 15;
 
-  if (!data.length) {
-    return null;
-  }
-
-  // Extract keys from first data item to use as columns
-  const columns = Object.keys(data[0]);
+  // Extract columns from first data item
+  const columns = data.length ? Object.keys(data[0]) : [];
   
-  // Filter and paginate data
-  const filteredData = searchQuery 
-    ? data.filter(item => 
-        columns.some(column => 
-          String(item[column]).toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      )
-    : data;
+  // Effect to handle filtering and pagination of data
+  useEffect(() => {
+    setIsLoading(true);
+    
+    // Use setTimeout to prevent UI freezing when dealing with large datasets
+    const timer = setTimeout(() => {
+      // Filter data based on search query
+      const filtered = searchQuery 
+        ? data.filter(item => 
+            columns.some(column => 
+              String(item[column]).toLowerCase().includes(searchQuery.toLowerCase())
+            )
+          )
+        : data;
+      
+      setFilteredData(filtered);
+      setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+      
+      // Reset to first page if current page is now out of bounds
+      if (currentPage > Math.ceil(filtered.length / itemsPerPage)) {
+        setCurrentPage(1);
+      }
+      
+      // Calculate paginated data
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      setPaginatedData(filtered.slice(startIndex, startIndex + itemsPerPage));
+      
+      setIsLoading(false);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery, currentPage, data, columns]);
   
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  // Reset to first page when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentPage(1);
+      setSearchQuery('');
+    }
+  }, [isOpen]);
   
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -64,6 +93,10 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
   // Check if previous/next buttons should be active
   const isPreviousDisabled = currentPage === 1;
   const isNextDisabled = currentPage === totalPages;
+
+  if (!data.length) {
+    return null;
+  }
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -96,17 +129,40 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedData.map((item, index) => (
-                <TableRow key={index}>
-                  {columns.map((column) => (
-                    <TableCell key={`${index}-${column}`}>
-                      {typeof item[column] === 'object' && item[column] instanceof Date 
-                        ? formatDate(item[column])
-                        : String(item[column])}
-                    </TableCell>
-                  ))}
+              {isLoading ? (
+                // Show loading state
+                Array.from({ length: itemsPerPage }).map((_, index) => (
+                  <TableRow key={`loading-${index}`}>
+                    {columns.map((column, colIndex) => (
+                      <TableCell key={`loading-${index}-${colIndex}`}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : paginatedData.length > 0 ? (
+                // Show data
+                paginatedData.map((item, index) => (
+                  <TableRow key={index}>
+                    {columns.map((column) => (
+                      <TableCell key={`${index}-${column}`}>
+                        {typeof item[column] === 'object' && item[column] instanceof Date 
+                          ? formatDate(item[column])
+                          : typeof item[column] === 'object' && item[column] !== null
+                          ? JSON.stringify(item[column])
+                          : String(item[column])}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                // No results
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="text-center py-8">
+                    Không tìm thấy kết quả phù hợp
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </ScrollArea>
@@ -169,8 +225,18 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
             </PaginationContent>
           </Pagination>
         )}
-        
-        <DialogFooter>
+
+        <DialogFooter className="flex justify-between">
+          <div className="text-sm text-gray-500">
+            {isLoading ? (
+              <div className="flex items-center">
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                Đang xử lý dữ liệu...
+              </div>
+            ) : (
+              `Hiển thị ${paginatedData.length} / ${filteredData.length} bản ghi`
+            )}
+          </div>
           <Button onClick={onClose}>Đóng</Button>
         </DialogFooter>
       </DialogContent>

@@ -224,6 +224,27 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     });
   };
 
+  const loadLargeDemoData = () => {
+    toast({
+      title: "Đang tạo dữ liệu lớn",
+      description: "Đang tạo bộ dữ liệu lớn mô phỏng người dùng Facebook thực...",
+    });
+
+    setTimeout(() => {
+      const largeDataFiles = createDemoData(true);
+      setFiles(prevFiles => {
+        const combinedFiles = [...prevFiles, ...largeDataFiles];
+        onFilesUploaded(combinedFiles);
+        return combinedFiles;
+      });
+      
+      toast({
+        title: "Đã tải dữ liệu lớn",
+        description: `Đã thêm ${largeDataFiles.length} file với gần 1 triệu bản ghi dữ liệu Facebook thực tế.`,
+      });
+    }, 1000);
+  };
+
   const getFacebookDataTypeLabel = (type: FacebookDataType): string => {
     const option = FILE_TYPE_OPTIONS.find(opt => opt.value === type);
     return option ? option.label : 'Không xác định';
@@ -293,12 +314,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                   className="mb-3"
                 />
                 
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <Button
                     variant="outline"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isProcessing}
-                    className="flex-1"
+                    className="w-full"
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Chọn file
@@ -308,10 +329,20 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                     variant="secondary"
                     onClick={loadDemoData}
                     disabled={isProcessing}
-                    className="flex-1"
+                    className="w-full"
                   >
                     <Database className="h-4 w-4 mr-2" />
-                    Tải dữ liệu demo
+                    Tải demo nhỏ
+                  </Button>
+
+                  <Button
+                    variant="default"
+                    onClick={loadLargeDemoData}
+                    disabled={isProcessing}
+                    className="w-full sm:col-span-1 col-span-2"
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Tải dữ liệu lớn (1M+)
                   </Button>
                 </div>
               </div>
