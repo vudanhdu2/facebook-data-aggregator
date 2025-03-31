@@ -1,4 +1,3 @@
-
 export interface FacebookData {
   id: string;
   type: FacebookDataType;
@@ -21,7 +20,6 @@ export enum FacebookDataType {
   UNKNOWN = 'unknown'
 }
 
-// New enum for data source
 export enum DataSourceType {
   UID_PROFILE = 'uid_profile',
   PAGE = 'page',
@@ -32,8 +30,21 @@ export interface UIDSource {
   fileName: string;
   fileType: FacebookDataType;
   timestamp: Date;
-  sourceType?: DataSourceType; // Source type (profile, page, group)
-  sourceUID?: string; // The specific UID for the source
+  sourceType?: DataSourceType;
+  sourceUID?: string;
+}
+
+export enum UserRole {
+  MEMBER = 'member',
+  ADMIN = 'admin'
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  role: UserRole;
+  createdAt: Date;
 }
 
 export interface AggregatedUserData {
@@ -46,7 +57,7 @@ export interface AggregatedUserData {
   pagesLikedCount: number;
   checkInsCount: number;
   lastActive?: Date;
-  sources: UIDSource[]; // Track where this UID came from
+  sources: UIDSource[];
   data: {
     friends: any[];
     groups: any[];
@@ -58,15 +69,18 @@ export interface AggregatedUserData {
 }
 
 export interface UploadedFile {
+  id: string;
   name: string;
   type: FacebookDataType;
   data: any[];
   rowCount: number;
   processed: boolean;
-  manualType?: boolean; // Track if type was manually selected
-  uploadDate: Date; // Add upload date for each file
-  sourceType: DataSourceType; // Add source type for each file
-  sourceUID?: string; // The specific UID for the source
+  manualType?: boolean;
+  uploadDate: Date;
+  sourceType: DataSourceType;
+  sourceUID?: string;
+  uploaderId: string;
+  uploaderName?: string;
 }
 
 export const FILE_TYPE_OPTIONS = [
@@ -89,4 +103,9 @@ export const DATA_SOURCE_OPTIONS = [
   { value: DataSourceType.UID_PROFILE, label: 'Hồ sơ người dùng' },
   { value: DataSourceType.PAGE, label: 'Trang' },
   { value: DataSourceType.GROUP, label: 'Nhóm' }
+];
+
+export const USER_ROLE_OPTIONS = [
+  { value: UserRole.MEMBER, label: 'Thành viên' },
+  { value: UserRole.ADMIN, label: 'Quản trị viên' }
 ];

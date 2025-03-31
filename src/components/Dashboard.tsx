@@ -9,6 +9,8 @@ import { UploadedFile, AggregatedUserData } from '@/types';
 import { aggregateDataByUID } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
 import { Database, Upload, History, Users } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { v4 as uuidv4 } from 'uuid';
 
 const Dashboard: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -16,6 +18,7 @@ const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("upload");
   const { toast } = useToast();
   const location = useLocation();
+  const { user } = useAuth();
 
   // Set active tab based on location
   useEffect(() => {
@@ -32,10 +35,18 @@ const Dashboard: React.FC = () => {
   }, [location]);
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
-    setUploadedFiles(files);
+    // Add uploader info and unique ID to each file
+    const filesWithUploader = files.map(file => ({
+      ...file,
+      id: file.id || uuidv4(), // Use existing ID or generate new one
+      uploaderId: user?.id || 'anonymous',
+      uploaderName: user?.name || user?.email || 'Anonymous User'
+    }));
+    
+    setUploadedFiles(filesWithUploader);
     
     try {
-      const aggregated = aggregateDataByUID(files);
+      const aggregated = aggregateDataByUID(filesWithUploader);
       setAggregatedData(aggregated);
       
       toast({
@@ -51,6 +62,11 @@ const Dashboard: React.FC = () => {
       });
     }
   };
+
+  // Get only the files uploaded by the current user if not admin
+  const userFiles = user?.role === 'admin' 
+    ? uploadedFiles 
+    : uploadedFiles.filter(file => file.uploaderId === user?.id);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -87,17 +103,22 @@ const Dashboard: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold mb-6 text-center">Lịch sử tải lên</h2>
           <div className="bg-white p-6 rounded-lg shadow-sm">
-            {uploadedFiles.length > 0 ? (
+            {userFiles.length > 0 ? (
               <div className="space-y-4">
-                {uploadedFiles.map((file, index) => (
+                {userFiles.map((file, index) => (
                   <div key={index} className="p-4 border rounded-md flex justify-between items-center">
                     <div>
                       <p className="font-medium">{file.name}</p>
                       <p className="text-sm text-gray-500">{file.rowCount} dòng dữ liệu</p>
                     </div>
-                    <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                      {file.type}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                        {file.type}
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">
+                        {file.uploadDate.toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
