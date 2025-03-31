@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { AggregatedUserData } from '@/types';
@@ -14,11 +14,88 @@ const DataDisplay: React.FC<DataDisplayProps> = ({ aggregatedData }) => {
   const [selectedUser, setSelectedUser] = useState<AggregatedUserData | null>(null);
   const [viewMode, setViewMode] = useState<'basic' | 'advanced'>('basic');
   
-  const filteredData = aggregatedData?.filter(user => {
+  const filteredData = useMemo(() => {
+    if (!searchQuery) return aggregatedData;
+    
     const query = searchQuery.toLowerCase();
-    return user.uid.toLowerCase().includes(query) || 
-           (user.name && user.name.toLowerCase().includes(query));
-  }) || [];
+    return aggregatedData.filter(user => {
+      return user.uid.toLowerCase().includes(query) || 
+             (user.name && user.name.toLowerCase().includes(query));
+    });
+  }, [aggregatedData, searchQuery]);
+  
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  }, []);
+  
+  const handleUserSelect = useCallback((user: AggregatedUserData) => {
+    setSelectedUser(user);
+  }, []);
+  
+  const handleViewModeChange = useCallback((value: string) => {
+    setViewMode(value as 'basic' | 'advanced');
+  }, []);
+  
+  const UserItem = React.memo(({ user }: { user: AggregatedUserData }) => (
+    <div 
+      onClick={() => handleUserSelect(user)}
+      className={`p-3 rounded-lg cursor-pointer transition-all ${
+        selectedUser?.uid === user.uid ? 'bg-primary text-white' : 'bg-white hover:bg-gray-100'
+      } shadow-sm border`}
+    >
+      <div className="flex items-center space-x-3">
+        <div className={`p-2 rounded-full ${
+          selectedUser?.uid === user.uid ? 'bg-white/20' : 'bg-primary/10'
+        }`}>
+          <UserCircle className={`h-5 w-5 ${
+            selectedUser?.uid === user.uid ? 'text-white' : 'text-primary'
+          }`} />
+        </div>
+        <div>
+          <h4 className="font-medium">{user.name || 'Không có tên'}</h4>
+          <p className={`text-xs ${
+            selectedUser?.uid === user.uid ? 'text-white/70' : 'text-gray-500'
+          }`}>
+            UID: {user.uid}
+          </p>
+        </div>
+      </div>
+      <div className={`grid grid-cols-3 gap-2 mt-2 text-xs ${
+        selectedUser?.uid === user.uid ? 'text-white/80' : 'text-gray-500'
+      }`}>
+        <div>Bạn bè: {user.friendsCount}</div>
+        <div>Nhóm: {user.groupsCount}</div>
+        <div>Bài viết: {user.postsCount}</div>
+      </div>
+    </div>
+  ));
+  
+  const renderUserList = () => {
+    const maxUsersToRender = Math.min(filteredData.length, 100);
+    const usersToRender = filteredData.slice(0, maxUsersToRender);
+    
+    if (filteredData.length === 0) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          {searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có dữ liệu người dùng'}
+        </div>
+      );
+    }
+    
+    return (
+      <>
+        {usersToRender.map(user => (
+          <UserItem key={user.uid} user={user} />
+        ))}
+        
+        {filteredData.length > maxUsersToRender && (
+          <div className="text-center py-4 text-gray-500 text-sm">
+            Hiển thị {maxUsersToRender} / {filteredData.length} kết quả. Tìm kiếm để thu hẹp kết quả.
+          </div>
+        )}
+      </>
+    );
+  };
   
   return (
     <div className="space-y-4">
@@ -28,56 +105,15 @@ const DataDisplay: React.FC<DataDisplayProps> = ({ aggregatedData }) => {
           placeholder="Tìm kiếm theo UID hoặc tên..." 
           className="pl-10"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
         />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        {/* User list */}
         <div className="md:col-span-4 space-y-2 max-h-[600px] overflow-y-auto pr-2">
-          {filteredData.length > 0 ? (
-            filteredData.map(user => (
-              <div 
-                key={user.uid}
-                onClick={() => setSelectedUser(user)}
-                className={`p-3 rounded-lg cursor-pointer transition-all ${
-                  selectedUser?.uid === user.uid ? 'bg-primary text-white' : 'bg-white hover:bg-gray-100'
-                } shadow-sm border`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-full ${
-                    selectedUser?.uid === user.uid ? 'bg-white/20' : 'bg-primary/10'
-                  }`}>
-                    <UserCircle className={`h-5 w-5 ${
-                      selectedUser?.uid === user.uid ? 'text-white' : 'text-primary'
-                    }`} />
-                  </div>
-                  <div>
-                    <h4 className="font-medium">{user.name || 'Không có tên'}</h4>
-                    <p className={`text-xs ${
-                      selectedUser?.uid === user.uid ? 'text-white/70' : 'text-gray-500'
-                    }`}>
-                      UID: {user.uid}
-                    </p>
-                  </div>
-                </div>
-                <div className={`grid grid-cols-3 gap-2 mt-2 text-xs ${
-                  selectedUser?.uid === user.uid ? 'text-white/80' : 'text-gray-500'
-                }`}>
-                  <div>Bạn bè: {user.friendsCount}</div>
-                  <div>Nhóm: {user.groupsCount}</div>
-                  <div>Bài viết: {user.postsCount}</div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              {searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có dữ liệu người dùng'}
-            </div>
-          )}
+          {renderUserList()}
         </div>
         
-        {/* User detail */}
         <div className="md:col-span-8 bg-white rounded-lg shadow-sm border p-6">
           {selectedUser ? (
             <div>
@@ -95,7 +131,7 @@ const DataDisplay: React.FC<DataDisplayProps> = ({ aggregatedData }) => {
                   )}
                 </div>
                 <div>
-                  <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'basic' | 'advanced')}>
+                  <Tabs value={viewMode} onValueChange={handleViewModeChange}>
                     <TabsList>
                       <TabsTrigger value="basic">Cơ bản</TabsTrigger>
                       <TabsTrigger value="advanced">Nâng cao</TabsTrigger>

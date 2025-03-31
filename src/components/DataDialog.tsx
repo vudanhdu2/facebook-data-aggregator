@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -36,59 +36,65 @@ interface DataDialogProps {
 const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, description, data }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredData, setFilteredData] = useState<any[]>([]);
-  const [paginatedData, setPaginatedData] = useState<any[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const itemsPerPage = 15;
 
-  // Extract columns from first data item
-  const columns = data.length ? Object.keys(data[0]) : [];
+  // Extract columns from first data item - memoized to prevent recalculations
+  const columns = useMemo(() => {
+    return data.length ? Object.keys(data[0]) : [];
+  }, [data.length ? data[0] : null]);
   
-  // Effect to handle filtering and pagination of data
-  useEffect(() => {
-    setIsLoading(true);
+  // Memoize filtered data to prevent recalculation on every render
+  const filteredData = useMemo(() => {
+    if (!searchQuery) return data;
     
-    // Use setTimeout to prevent UI freezing when dealing with large datasets
-    const timer = setTimeout(() => {
-      // Filter data based on search query
-      const filtered = searchQuery 
-        ? data.filter(item => 
-            columns.some(column => 
-              String(item[column]).toLowerCase().includes(searchQuery.toLowerCase())
-            )
-          )
-        : data;
-      
-      setFilteredData(filtered);
-      setTotalPages(Math.ceil(filtered.length / itemsPerPage));
-      
-      // Reset to first page if current page is now out of bounds
-      if (currentPage > Math.ceil(filtered.length / itemsPerPage)) {
-        setCurrentPage(1);
-      }
-      
-      // Calculate paginated data
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      setPaginatedData(filtered.slice(startIndex, startIndex + itemsPerPage));
-      
-      setIsLoading(false);
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [searchQuery, currentPage, data, columns]);
+    return data.filter(item => 
+      columns.some(column => 
+        String(item[column]).toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    );
+  }, [data, searchQuery, columns]);
   
-  // Reset to first page when dialog opens
+  // Calculate total pages once when filtered data changes
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
+  }, [filteredData.length, itemsPerPage]);
+  
+  // Get current page data - memoized to prevent recalculation
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredData.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredData, currentPage, itemsPerPage]);
+  
+  // Reset to first page when dialog opens or search changes
   useEffect(() => {
     if (isOpen) {
       setCurrentPage(1);
-      setSearchQuery('');
     }
-  }, [isOpen]);
+  }, [isOpen, searchQuery]);
   
-  const handlePageChange = (page: number) => {
+  // Handle data loading state
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoading(true);
+      
+      // Use a small timeout to prevent UI freezing
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, filteredData]);
+  
+  const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
-  };
+  }, []);
+  
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset to first page on search
+  }, []);
   
   // Check if previous/next buttons should be active
   const isPreviousDisabled = currentPage === 1;
@@ -97,6 +103,46 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
   if (!data.length) {
     return null;
   }
+  
+  // Pagination item renderer - optimizes the pagination display
+  const renderPaginationItems = () => {
+    const items = [];
+    const maxVisiblePages = 5;
+    
+    let startPage = 1;
+    let endPage = totalPages;
+    
+    if (totalPages > maxVisiblePages) {
+      const halfVisible = Math.floor(maxVisiblePages / 2);
+      
+      if (currentPage <= halfVisible + 1) {
+        // Near the start
+        endPage = maxVisiblePages;
+      } else if (currentPage >= totalPages - halfVisible) {
+        // Near the end
+        startPage = totalPages - maxVisiblePages + 1;
+      } else {
+        // In the middle
+        startPage = currentPage - halfVisible;
+        endPage = currentPage + halfVisible;
+      }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink 
+            isActive={currentPage === i}
+            onClick={() => handlePageChange(i)}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    return items;
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -112,10 +158,7 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
             placeholder="Tìm kiếm..."
             className="pl-8"
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1); // Reset to first page on search
-            }}
+            onChange={handleSearchChange}
           />
         </div>
         
@@ -172,36 +215,12 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious 
-                  onClick={() => !isPreviousDisabled && handlePageChange(currentPage - 1)} 
+                  onClick={() => !isPreviousDisabled && handlePageChange(currentPage - 1)}
                   className={isPreviousDisabled ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
               
-              {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                let pageNum;
-                
-                // Logic for showing pages around the current page
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return pageNum > 0 && pageNum <= totalPages ? (
-                  <PaginationItem key={i}>
-                    <PaginationLink 
-                      isActive={currentPage === pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                    >
-                      {pageNum}
-                    </PaginationLink>
-                  </PaginationItem>
-                ) : null;
-              })}
+              {renderPaginationItems()}
               
               {totalPages > 5 && currentPage < totalPages - 2 && (
                 <>
