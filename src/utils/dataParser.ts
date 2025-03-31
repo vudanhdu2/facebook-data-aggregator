@@ -1,3 +1,4 @@
+
 import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile, UIDSource, DataSourceType } from '../types';
 import * as XLSX from 'xlsx';
 
@@ -130,7 +131,8 @@ export function aggregateDataByUID(files: UploadedFile[]): AggregatedUserData[] 
         fileName: file.name,
         fileType: file.type,
         timestamp: file.uploadDate,
-        sourceType: file.sourceType // Include the source type
+        sourceType: file.sourceType, // Include the source type
+        sourceUID: file.sourceUID // Include the source UID if available
       };
       
       // Check if this source already exists to avoid duplicates

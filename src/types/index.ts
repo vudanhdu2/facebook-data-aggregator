@@ -32,7 +32,8 @@ export interface UIDSource {
   fileName: string;
   fileType: FacebookDataType;
   timestamp: Date;
-  sourceType?: DataSourceType; // Add source type to track where the UID came from
+  sourceType?: DataSourceType; // Source type (profile, page, group)
+  sourceUID?: string; // The specific UID for the source
 }
 
 export interface AggregatedUserData {
@@ -65,6 +66,7 @@ export interface UploadedFile {
   manualType?: boolean; // Track if type was manually selected
   uploadDate: Date; // Add upload date for each file
   sourceType: DataSourceType; // Add source type for each file
+  sourceUID?: string; // The specific UID for the source
 }
 
 export const FILE_TYPE_OPTIONS = [

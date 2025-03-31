@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA_SOURCE_OPTIONS } from '@/types';
 import { readExcelFile } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -38,6 +39,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFileType, setSelectedFileType] = useState<FacebookDataType | null>(null);
   const [selectedSourceType, setSelectedSourceType] = useState<DataSourceType>(DataSourceType.UID_PROFILE);
+  const [sourceUID, setSourceUID] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -60,8 +62,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
           result.manualType = true;
         }
         
-        // Add the source type to the file data
+        // Add the source type and UID to the file data
         result.sourceType = selectedSourceType;
+        if (sourceUID.trim()) {
+          result.sourceUID = sourceUID.trim();
+        }
         
         return result;
       }
@@ -190,6 +195,22 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       description: `File "${files[fileIndex].name}" đã được cập nhật thành ${getDataSourceTypeLabel(newSourceType)}`
     });
   };
+  
+  const updateSourceUID = (fileIndex: number, newUID: string) => {
+    const updatedFiles = [...files];
+    updatedFiles[fileIndex] = {
+      ...updatedFiles[fileIndex],
+      sourceUID: newUID.trim() || undefined
+    };
+    
+    setFiles(updatedFiles);
+    onFilesUploaded(updatedFiles);
+    
+    toast({
+      title: "Đã cập nhật UID nguồn",
+      description: `File "${files[fileIndex].name}" đã được cập nhật với UID: ${newUID || 'Không có'}`
+    });
+  };
 
   const getFacebookDataTypeLabel = (type: FacebookDataType): string => {
     const option = FILE_TYPE_OPTIONS.find(opt => opt.value === type);
@@ -252,15 +273,24 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                 </SelectContent>
               </Select>
               
-              <Button
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isProcessing}
-                className="sm:col-span-2"
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Chọn file
-              </Button>
+              <div className="sm:col-span-2">
+                <Input 
+                  placeholder="Nhập UID nguồn (nếu có)" 
+                  value={sourceUID}
+                  onChange={(e) => setSourceUID(e.target.value)}
+                  className="mb-3"
+                />
+                
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessing}
+                  className="w-full"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Chọn file
+                </Button>
+              </div>
             </div>
 
             <div
@@ -299,7 +329,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                     <FileSpreadsheet className="h-5 w-5 text-secondary" />
                     <div>
                       <p className="font-medium text-sm">{file.name}</p>
-                      <div className="flex items-center space-x-3 text-xs text-gray-500">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                         <span>{file.rowCount} dòng</span>
                         <div className="flex items-center">
                           <Calendar className="h-3 w-3 mr-1" />
@@ -309,10 +339,41 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                           {getSourceTypeIcon(file.sourceType)}
                           <span>{getDataSourceTypeLabel(file.sourceType)}</span>
                         </div>
+                        {file.sourceUID && (
+                          <div className="flex items-center">
+                            <span className="font-medium">UID: {file.sourceUID}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          {file.sourceUID ? (
+                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">
+                              {file.sourceUID}
+                            </span>
+                          ) : (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                              Nhập UID
+                            </span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 p-3">
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm">UID Nguồn</h4>
+                          <Input 
+                            placeholder="Nhập UID" 
+                            defaultValue={file.sourceUID || ''}
+                            onChange={(e) => updateSourceUID(index, e.target.value)}
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
