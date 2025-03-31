@@ -61,6 +61,10 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
     setCurrentPage(page);
   };
   
+  // Check if previous/next buttons should be active
+  const isPreviousDisabled = currentPage === 1;
+  const isNextDisabled = currentPage === totalPages;
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[90vw] max-h-[90vh]">
@@ -112,9 +116,8 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious 
-                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)} 
-                  disabled={currentPage === 1}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                  onClick={() => !isPreviousDisabled && handlePageChange(currentPage - 1)} 
+                  className={isPreviousDisabled ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
               
@@ -159,9 +162,8 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
               
               <PaginationItem>
                 <PaginationNext 
-                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                  onClick={() => !isNextDisabled && handlePageChange(currentPage + 1)}
+                  className={isNextDisabled ? "pointer-events-none opacity-50" : ""}
                 />
               </PaginationItem>
             </PaginationContent>
