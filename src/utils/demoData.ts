@@ -1,4 +1,3 @@
-
 import { FacebookDataType, UploadedFile, DataSourceType } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -163,6 +162,7 @@ const generateComprehensiveUserData = (userId: string, userName: string): {
   wallPosts: any[],
   groupPosts: any[],
   comments: any[],
+  wallComments: any[],
   groupComments: any[],
   pageComments: any[],
   groups: any[],
@@ -313,6 +313,7 @@ const generateComprehensiveUserData = (userId: string, userName: string): {
     wallPosts,
     groupPosts,
     comments,
+    wallComments,
     groupComments,
     pageComments,
     groups,
@@ -378,8 +379,8 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
       id: uuidv4(),
       name: "wall_comments_data_large.xlsx",
       type: FacebookDataType.COMMENTS,
-      data: userData.wallComments,
-      rowCount: userData.wallComments.length,
+      data: userData.comments,
+      rowCount: userData.comments.length,
       processed: true,
       uploadDate: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
       sourceType: DataSourceType.UID_PROFILE,

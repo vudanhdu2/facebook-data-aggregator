@@ -70,6 +70,8 @@ export interface AggregatedUserData {
     comments: any[];
     pagesLiked: any[];
     checkIns: any[];
+    events: any[];
+    interactions: any[];
   };
 }
 
