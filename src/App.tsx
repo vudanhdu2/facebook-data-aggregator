@@ -56,7 +56,7 @@ const App = () => (
             
             <Route path="/admin" element={
               <ProtectedRoute requiredRole={UserRole.ADMIN}>
-                <Admin uploadedFiles={[]} />
+                <Admin />
               </ProtectedRoute>
             } />
             

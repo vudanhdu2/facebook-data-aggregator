@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,23 +7,20 @@ import Header from '@/components/Header';
 import SidebarNav from '@/components/SidebarNav';
 import { User, Users, FileArchive, Activity } from 'lucide-react';
 import { UserRole, UploadedFile } from '@/types';
-import Dashboard from '@/components/Dashboard';
 
-const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  uploadedFiles?: UploadedFile[];
+}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   // Mock user data - in a real app would come from database
   const mockMemberUsers = [
     { id: '2', name: 'Member User', email: 'member@example.com', role: UserRole.MEMBER, filesUploaded: 3 },
     { id: '3', name: 'Another Member', email: 'another@example.com', role: UserRole.MEMBER, filesUploaded: 1 },
   ];
-
-  // Callback for getting files from Dashboard
-  const handleFilesUploaded = (files: UploadedFile[]) => {
-    setUploadedFiles(files);
-  };
 
   const totalFiles = uploadedFiles.length;
   const totalMembers = mockMemberUsers.length;
@@ -166,16 +163,6 @@ const AdminDashboard: React.FC = () => {
               </Card>
             </TabsContent>
           </Tabs>
-          
-          {/* Hidden Dashboard component to get files */}
-          <div className="hidden">
-            <Dashboard ref={(dashboard) => {
-              if (dashboard) {
-                // This is a workaround for now - in a real app, 
-                // we would use a central state management solution
-              }
-            }} />
-          </div>
         </main>
       </div>
     </div>
