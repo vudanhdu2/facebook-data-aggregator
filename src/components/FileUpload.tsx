@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from 'react';
-import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle, Calendar, UserCircle, FileText, Users } from 'lucide-react';
+import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle, Calendar, UserCircle, FileText, Users, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA_SOURCE_OPTIONS } from '@/types';
@@ -28,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { format } from 'date-fns';
+import { createDemoData } from '@/utils/demoData';
 
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void;
@@ -56,13 +56,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     try {
       const result = await readExcelFile(file);
       if (result) {
-        // If a manual type was selected, override the auto-detected type
         if (manualType) {
           result.type = manualType;
           result.manualType = true;
         }
         
-        // Add the source type and UID to the file data
         result.sourceType = selectedSourceType;
         if (sourceUID.trim()) {
           result.sourceUID = sourceUID.trim();
@@ -212,6 +210,20 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     });
   };
 
+  const loadDemoData = () => {
+    const demoFiles = createDemoData();
+    setFiles(prevFiles => {
+      const combinedFiles = [...prevFiles, ...demoFiles];
+      onFilesUploaded(combinedFiles);
+      return combinedFiles;
+    });
+    
+    toast({
+      title: "Đã tải dữ liệu demo",
+      description: `Đã thêm ${demoFiles.length} file demo để thử nghiệm.`,
+    });
+  };
+
   const getFacebookDataTypeLabel = (type: FacebookDataType): string => {
     const option = FILE_TYPE_OPTIONS.find(opt => opt.value === type);
     return option ? option.label : 'Không xác định';
@@ -281,15 +293,27 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                   className="mb-3"
                 />
                 
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isProcessing}
-                  className="w-full"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Chọn file
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessing}
+                    className="flex-1"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Chọn file
+                  </Button>
+                  
+                  <Button
+                    variant="secondary"
+                    onClick={loadDemoData}
+                    disabled={isProcessing}
+                    className="flex-1"
+                  >
+                    <Database className="h-4 w-4 mr-2" />
+                    Tải dữ liệu demo
+                  </Button>
+                </div>
               </div>
             </div>
 

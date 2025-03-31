@@ -35,12 +35,12 @@ const Dashboard: React.FC = () => {
   }, [location]);
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
-    // Add uploader info and unique ID to each file
+    // Add uploader info and unique ID to each file if missing
     const filesWithUploader = files.map(file => ({
       ...file,
-      id: file.id || uuidv4(), // Use existing ID or generate new one
-      uploaderId: user?.id || 'anonymous',
-      uploaderName: user?.name || user?.email || 'Anonymous User'
+      id: file.id || uuidv4(),
+      uploaderId: file.uploaderId || user?.id || 'anonymous',
+      uploaderName: file.uploaderName || user?.name || user?.email || 'Anonymous User'
     }));
     
     setUploadedFiles(filesWithUploader);
