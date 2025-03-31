@@ -1,6 +1,6 @@
-
 import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile, UIDSource, DataSourceType } from '../types';
 import * as XLSX from 'xlsx';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function readExcelFile(file: File): Promise<UploadedFile | null> {
   return new Promise((resolve, reject) => {
@@ -18,6 +18,7 @@ export async function readExcelFile(file: File): Promise<UploadedFile | null> {
         const dataType = determineDataType(jsonData, file.name);
         
         resolve({
+          id: uuidv4(), // Add a unique ID
           name: file.name,
           type: dataType,
           data: jsonData,
@@ -25,7 +26,8 @@ export async function readExcelFile(file: File): Promise<UploadedFile | null> {
           processed: false,
           manualType: false,
           uploadDate: new Date(), // Add current timestamp
-          sourceType: DataSourceType.UID_PROFILE // Default source type, will be overridden if specified
+          sourceType: DataSourceType.UID_PROFILE, // Default source type, will be overridden if specified
+          uploaderId: 'system' // Default uploader ID, will be overridden
         });
       } catch (error) {
         console.error("Error parsing Excel file:", error);
