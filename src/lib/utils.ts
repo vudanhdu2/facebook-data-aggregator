@@ -15,11 +15,21 @@ export function formatDate(date: Date | string): string {
     return typeof date === 'string' ? date : '';
   }
   
-  return d.toLocaleDateString('vi-VN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  try {
+    return d.toLocaleDateString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    // Fallback if toLocaleDateString fails
+    return d.toISOString().slice(0, 16).replace('T', ' ');
+  }
+}
+
+// Format large numbers with thousand separators
+export function formatNumber(num: number): string {
+  return new Intl.NumberFormat('vi-VN').format(num);
 }
