@@ -1,3 +1,4 @@
+
 export interface FacebookData {
   id: string;
   type: FacebookDataType;
@@ -9,13 +10,17 @@ export enum FacebookDataType {
   GROUPS = 'groups',
   POSTS = 'posts',
   COMMENTS = 'comments',
+  GROUP_POSTS = 'group_posts',
+  GROUP_COMMENTS = 'group_comments',
+  PAGE_COMMENTS = 'page_comments',
   PAGES_LIKED = 'pages_liked',
   CHECK_INS = 'check_ins',
+  EVENTS = 'events',
+  INTERACTIONS = 'interactions',
   PROFILES = 'profiles',
   MESSAGES = 'messages',
   PHOTOS = 'photos',
   VIDEOS = 'videos',
-  EVENTS = 'events',
   REACTIONS = 'reactions',
   UNKNOWN = 'unknown'
 }
@@ -87,14 +92,18 @@ export const FILE_TYPE_OPTIONS = [
   { value: FacebookDataType.FRIENDS, label: 'Danh sách bạn bè' },
   { value: FacebookDataType.GROUPS, label: 'Danh sách nhóm' },
   { value: FacebookDataType.POSTS, label: 'Danh sách bài đăng' },
-  { value: FacebookDataType.COMMENTS, label: 'Danh sách bình luận' },
+  { value: FacebookDataType.GROUP_POSTS, label: 'Bài đăng trên nhóm' },
+  { value: FacebookDataType.COMMENTS, label: 'Bình luận trên tường' },
+  { value: FacebookDataType.GROUP_COMMENTS, label: 'Bình luận trên nhóm' },
+  { value: FacebookDataType.PAGE_COMMENTS, label: 'Bình luận trên trang' },
   { value: FacebookDataType.PAGES_LIKED, label: 'Danh sách trang đã thích' },
   { value: FacebookDataType.CHECK_INS, label: 'Danh sách địa điểm đã check-in' },
+  { value: FacebookDataType.EVENTS, label: 'Sự kiện đã tham gia' },
+  { value: FacebookDataType.INTERACTIONS, label: 'Tương tác với người dùng khác' },
   { value: FacebookDataType.PROFILES, label: 'Thông tin hồ sơ người dùng' },
   { value: FacebookDataType.MESSAGES, label: 'Tin nhắn và cuộc trò chuyện' },
   { value: FacebookDataType.PHOTOS, label: 'Ảnh đã đăng' },
   { value: FacebookDataType.VIDEOS, label: 'Video đã đăng' },
-  { value: FacebookDataType.EVENTS, label: 'Sự kiện đã tham gia' },
   { value: FacebookDataType.REACTIONS, label: 'Các biểu cảm (reaction)' },
   { value: FacebookDataType.UNKNOWN, label: 'Không xác định' }
 ];

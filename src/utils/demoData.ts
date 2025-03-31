@@ -160,49 +160,102 @@ const getRandomInteractionCounts = (): { likes: number, comments: number, shares
 const generateComprehensiveUserData = (userId: string, userName: string): {
   friends: any[],
   posts: any[],
+  wallPosts: any[],
+  groupPosts: any[],
   comments: any[],
+  groupComments: any[],
+  pageComments: any[],
   groups: any[],
   pagesLiked: any[],
-  checkIns: any[]
+  checkIns: any[],
+  events: any[],
+  interactions: any[]
 } => {
-  // Generate friends (300-500 friends)
-  const friendsCount = Math.floor(Math.random() * 200) + 300;
+  // Generate friends (50-70 friends)
+  const friendsCount = Math.floor(Math.random() * 20) + 50;
   const friends = Array.from({ length: friendsCount }, () => ({
     uid: getRandomUID(),
     name: getRandomName(),
     friend_since: getRandomDate()
   }));
 
-  // Generate posts (300-500 posts over time)
-  const postsCount = Math.floor(Math.random() * 200) + 300;
-  const posts = Array.from({ length: postsCount }, () => {
+  // Generate wall posts (50 posts)
+  const wallPosts = Array.from({ length: 50 }, () => {
     const interactions = getRandomInteractionCounts();
     return { 
       uid: userId, 
       post_id: getRandomId('post'), 
       content: getRandomPost(), 
       posted_at: getRandomDate(),
+      post_type: 'wall',
       likes: interactions.likes,
       comments: interactions.comments,
       shares: interactions.shares
     };
   });
 
-  // Generate comments (400-700 comments)
-  const commentsCount = Math.floor(Math.random() * 300) + 400;
-  const comments = Array.from({ length: commentsCount }, () => ({ 
+  // Generate group posts (50 posts)
+  const groupPosts = Array.from({ length: 50 }, () => {
+    const interactions = getRandomInteractionCounts();
+    return { 
+      uid: userId, 
+      post_id: getRandomId('gpost'), 
+      content: getRandomPost(), 
+      posted_at: getRandomDate(),
+      post_type: 'group',
+      group_id: getRandomId('group'),
+      group_name: getRandomGroupName(),
+      likes: interactions.likes,
+      comments: interactions.comments,
+      shares: interactions.shares
+    };
+  });
+
+  // All posts combined
+  const posts = [...wallPosts, ...groupPosts];
+
+  // Generate wall comments (50 comments)
+  const wallComments = Array.from({ length: 50 }, () => ({ 
     uid: userId, 
     comment_id: getRandomId('cmt'), 
     content: getRandomComment(), 
     commented_at: getRandomDate(),
+    comment_type: 'wall',
     likes: Math.floor(Math.random() * 50),
     post_id: getRandomId('post'),
     post_owner_id: getRandomUID()
   }));
 
-  // Generate groups (50-100 groups)
-  const groupsCount = Math.floor(Math.random() * 50) + 50;
-  const groups = Array.from({ length: groupsCount }, () => ({ 
+  // Generate group comments (50 comments)
+  const groupComments = Array.from({ length: 50 }, () => ({ 
+    uid: userId, 
+    comment_id: getRandomId('gcmt'), 
+    content: getRandomComment(), 
+    commented_at: getRandomDate(),
+    comment_type: 'group',
+    likes: Math.floor(Math.random() * 50),
+    post_id: getRandomId('gpost'),
+    group_id: getRandomId('group'),
+    group_name: getRandomGroupName()
+  }));
+
+  // Generate page comments (50 comments)
+  const pageComments = Array.from({ length: 50 }, () => ({ 
+    uid: userId, 
+    comment_id: getRandomId('pcmt'), 
+    content: getRandomComment(), 
+    commented_at: getRandomDate(),
+    comment_type: 'page',
+    likes: Math.floor(Math.random() * 50),
+    page_id: getRandomId('page'),
+    page_name: getRandomPageName()
+  }));
+
+  // All comments combined
+  const comments = [...wallComments, ...groupComments, ...pageComments];
+
+  // Generate groups (50 groups)
+  const groups = Array.from({ length: 50 }, () => ({ 
     uid: userId, 
     group_id: getRandomId('group'), 
     group_name: getRandomGroupName(), 
@@ -210,18 +263,16 @@ const generateComprehensiveUserData = (userId: string, userName: string): {
     member_count: getRandomMemberCount()
   }));
 
-  // Generate pages liked (100-200 pages)
-  const pagesCount = Math.floor(Math.random() * 100) + 100;
-  const pagesLiked = Array.from({ length: pagesCount }, () => ({ 
+  // Generate pages liked (50 pages)
+  const pagesLiked = Array.from({ length: 50 }, () => ({ 
     uid: userId, 
     page_id: getRandomId('page'), 
     page_name: getRandomPageName(), 
     liked_at: getRandomDate()
   }));
 
-  // Generate check-ins (50-100 locations)
-  const checkInsCount = Math.floor(Math.random() * 50) + 50;
-  const checkIns = Array.from({ length: checkInsCount }, () => ({
+  // Generate check-ins (50 locations)
+  const checkIns = Array.from({ length: 50 }, () => ({
     uid: userId,
     location_id: getRandomId('loc'),
     location_name: getRandomPlaceName(),
@@ -232,13 +283,43 @@ const generateComprehensiveUserData = (userId: string, userName: string): {
     }
   }));
 
+  // Generate events (50 events)
+  const events = Array.from({ length: 50 }, () => ({
+    uid: userId,
+    event_id: getRandomId('event'),
+    event_name: `Sự kiện ${Math.floor(Math.random() * 1000)}`,
+    event_date: getRandomDate(),
+    location: getRandomPlaceName(),
+    joined_at: getRandomDate()
+  }));
+
+  // Generate interactions with other users (50 interactions)
+  const interactions = Array.from({ length: 50 }, () => {
+    const interactionTypes = ['like', 'comment', 'share', 'mention', 'tag'];
+    return {
+      uid: userId,
+      interaction_id: getRandomId('int'),
+      interaction_type: interactionTypes[Math.floor(Math.random() * interactionTypes.length)],
+      interaction_date: getRandomDate(),
+      target_uid: getRandomUID(),
+      target_name: getRandomName(),
+      content_id: getRandomId('cnt')
+    };
+  });
+
   return {
     friends,
     posts,
+    wallPosts,
+    groupPosts,
     comments,
+    groupComments,
+    pageComments,
     groups,
     pagesLiked,
-    checkIns
+    checkIns,
+    events,
+    interactions
   };
 };
 
@@ -267,12 +348,25 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
       uploaderName: 'Người dùng Demo'
     };
 
-    const postsFile: UploadedFile = {
+    const wallPostsFile: UploadedFile = {
       id: uuidv4(),
-      name: "posts_data_large.xlsx",
+      name: "wall_posts_data_large.xlsx",
       type: FacebookDataType.POSTS,
-      data: userData.posts,
-      rowCount: userData.posts.length,
+      data: userData.wallPosts,
+      rowCount: userData.wallPosts.length,
+      processed: true,
+      uploadDate: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
+      sourceType: DataSourceType.UID_PROFILE,
+      uploaderId: 'demo',
+      uploaderName: 'Người dùng Demo'
+    };
+
+    const groupPostsFile: UploadedFile = {
+      id: uuidv4(),
+      name: "group_posts_data_large.xlsx",
+      type: FacebookDataType.GROUP_POSTS,
+      data: userData.groupPosts,
+      rowCount: userData.groupPosts.length,
       processed: true,
       uploadDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
       sourceType: DataSourceType.UID_PROFILE,
@@ -280,14 +374,40 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
       uploaderName: 'Người dùng Demo'
     };
 
-    const commentsFile: UploadedFile = {
+    const wallCommentsFile: UploadedFile = {
       id: uuidv4(),
-      name: "comments_data_large.xlsx",
+      name: "wall_comments_data_large.xlsx",
       type: FacebookDataType.COMMENTS,
-      data: userData.comments,
-      rowCount: userData.comments.length,
+      data: userData.wallComments,
+      rowCount: userData.wallComments.length,
+      processed: true,
+      uploadDate: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
+      sourceType: DataSourceType.UID_PROFILE,
+      uploaderId: 'demo',
+      uploaderName: 'Người dùng Demo'
+    };
+
+    const groupCommentsFile: UploadedFile = {
+      id: uuidv4(),
+      name: "group_comments_data_large.xlsx",
+      type: FacebookDataType.GROUP_COMMENTS,
+      data: userData.groupComments,
+      rowCount: userData.groupComments.length,
       processed: true,
       uploadDate: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+      sourceType: DataSourceType.UID_PROFILE,
+      uploaderId: 'demo',
+      uploaderName: 'Người dùng Demo'
+    };
+
+    const pageCommentsFile: UploadedFile = {
+      id: uuidv4(),
+      name: "page_comments_data_large.xlsx",
+      type: FacebookDataType.PAGE_COMMENTS,
+      data: userData.pageComments,
+      rowCount: userData.pageComments.length,
+      processed: true,
+      uploadDate: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
       sourceType: DataSourceType.UID_PROFILE,
       uploaderId: 'demo',
       uploaderName: 'Người dùng Demo'
@@ -300,7 +420,7 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
       data: userData.groups,
       rowCount: userData.groups.length,
       processed: true,
-      uploadDate: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+      uploadDate: new Date(now.getTime() - 1.5 * 24 * 60 * 60 * 1000), // 1.5 days ago
       sourceType: DataSourceType.UID_PROFILE,
       uploaderId: 'demo',
       uploaderName: 'Người dùng Demo'
@@ -326,25 +446,63 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
       data: userData.checkIns,
       rowCount: userData.checkIns.length,
       processed: true,
-      uploadDate: new Date(now.getTime()),
+      uploadDate: new Date(now.getTime() - 0.5 * 24 * 60 * 60 * 1000), // 12 hours ago
       sourceType: DataSourceType.UID_PROFILE,
       uploaderId: 'demo',
       uploaderName: 'Người dùng Demo'
     };
 
-    return [friendsFile, postsFile, commentsFile, groupsFile, pagesLikedFile, checkInsFile];
+    const eventsFile: UploadedFile = {
+      id: uuidv4(),
+      name: "events_large.xlsx",
+      type: FacebookDataType.EVENTS,
+      data: userData.events,
+      rowCount: userData.events.length,
+      processed: true,
+      uploadDate: new Date(now.getTime() - 0.2 * 24 * 60 * 60 * 1000), // ~5 hours ago
+      sourceType: DataSourceType.UID_PROFILE,
+      uploaderId: 'demo',
+      uploaderName: 'Người dùng Demo'
+    };
+
+    const interactionsFile: UploadedFile = {
+      id: uuidv4(),
+      name: "interactions_large.xlsx",
+      type: FacebookDataType.INTERACTIONS,
+      data: userData.interactions,
+      rowCount: userData.interactions.length,
+      processed: true,
+      uploadDate: new Date(now.getTime()), // current time
+      sourceType: DataSourceType.UID_PROFILE,
+      uploaderId: 'demo',
+      uploaderName: 'Người dùng Demo'
+    };
+
+    return [
+      friendsFile, 
+      wallPostsFile, 
+      groupPostsFile, 
+      wallCommentsFile, 
+      groupCommentsFile, 
+      pageCommentsFile, 
+      groupsFile, 
+      pagesLikedFile, 
+      checkInsFile,
+      eventsFile,
+      interactionsFile
+    ];
   }
   
-  // Default behavior for regular-sized dataset
-  // Generate 200 users with consistent UIDs to use across data types
-  const demoUsers = Array.from({ length: 200 }, () => ({
+  // Default behavior for regular-sized dataset with 50 of each type
+  // Generate 50 users with consistent UIDs to use across data types
+  const demoUsers = Array.from({ length: 50 }, () => ({
     uid: getRandomUID(),
     name: getRandomName()
   }));
   
-  // Demo file 1: Friends list (250 records)
+  // Demo file 1: Friends list (50 records)
   const friendsData = [];
-  for (let i = 0; i < 250; i++) {
+  for (let i = 0; i < 50; i++) {
     const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
     friendsData.push({
       uid: user.uid,
@@ -366,28 +524,61 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
     uploaderName: 'Người dùng Demo'
   };
 
-  // Demo file 2: Posts data (250 records)
-  const postsData = [];
-  for (let i = 0; i < 250; i++) {
+  // Demo file 2: Wall Posts data (50 records)
+  const wallPostsData = [];
+  for (let i = 0; i < 50; i++) {
     const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
     const interactions = getRandomInteractionCounts();
-    postsData.push({ 
+    wallPostsData.push({ 
       uid: user.uid, 
       post_id: getRandomId('post'), 
       content: getRandomPost(), 
       posted_at: getRandomDate(),
+      post_type: 'wall',
       likes: interactions.likes,
       comments: interactions.comments,
       shares: interactions.shares
     });
   }
   
-  const postsFile: UploadedFile = {
+  const wallPostsFile: UploadedFile = {
     id: uuidv4(),
-    name: "posts_data.xlsx",
+    name: "wall_posts_data.xlsx",
     type: FacebookDataType.POSTS,
-    data: postsData,
-    rowCount: postsData.length,
+    data: wallPostsData,
+    rowCount: wallPostsData.length,
+    processed: true,
+    uploadDate: new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
+    sourceType: DataSourceType.UID_PROFILE,
+    uploaderId: 'demo',
+    uploaderName: 'Người dùng Demo'
+  };
+
+  // Demo file 3: Group Posts data (50 records)
+  const groupPostsData = [];
+  for (let i = 0; i < 50; i++) {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    const interactions = getRandomInteractionCounts();
+    groupPostsData.push({ 
+      uid: user.uid, 
+      post_id: getRandomId('gpost'), 
+      content: getRandomPost(), 
+      posted_at: getRandomDate(),
+      post_type: 'group',
+      group_id: getRandomId('group'),
+      group_name: getRandomGroupName(),
+      likes: interactions.likes,
+      comments: interactions.comments,
+      shares: interactions.shares
+    });
+  }
+  
+  const groupPostsFile: UploadedFile = {
+    id: uuidv4(),
+    name: "group_posts_data.xlsx",
+    type: FacebookDataType.GROUP_POSTS,
+    data: groupPostsData,
+    rowCount: groupPostsData.length,
     processed: true,
     uploadDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
     sourceType: DataSourceType.UID_PROFILE,
@@ -395,27 +586,58 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
     uploaderName: 'Người dùng Demo'
   };
 
-  // Demo file 3: Comments data (200 records)
-  const commentsData = [];
-  for (let i = 0; i < 200; i++) {
+  // Demo file 4: Wall Comments data (50 records)
+  const wallCommentsData = [];
+  for (let i = 0; i < 50; i++) {
     const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
-    commentsData.push({ 
+    wallCommentsData.push({ 
       uid: user.uid, 
       comment_id: getRandomId('cmt'), 
       content: getRandomComment(), 
       commented_at: getRandomDate(),
+      comment_type: 'wall',
       likes: Math.floor(Math.random() * 50),
       post_id: getRandomId('post'),
       post_owner_id: getRandomUID()
     });
   }
   
-  const commentsFile: UploadedFile = {
+  const wallCommentsFile: UploadedFile = {
     id: uuidv4(),
-    name: "comments_data.xlsx",
+    name: "wall_comments_data.xlsx",
     type: FacebookDataType.COMMENTS,
-    data: commentsData,
-    rowCount: commentsData.length,
+    data: wallCommentsData,
+    rowCount: wallCommentsData.length,
+    processed: true,
+    uploadDate: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
+    sourceType: DataSourceType.UID_PROFILE,
+    uploaderId: 'demo',
+    uploaderName: 'Người dùng Demo'
+  };
+
+  // Demo file 5: Group Comments data (50 records)
+  const groupCommentsData = [];
+  for (let i = 0; i < 50; i++) {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    groupCommentsData.push({ 
+      uid: user.uid, 
+      comment_id: getRandomId('gcmt'), 
+      content: getRandomComment(), 
+      commented_at: getRandomDate(),
+      comment_type: 'group',
+      likes: Math.floor(Math.random() * 50),
+      post_id: getRandomId('gpost'),
+      group_id: getRandomId('group'),
+      group_name: getRandomGroupName()
+    });
+  }
+  
+  const groupCommentsFile: UploadedFile = {
+    id: uuidv4(),
+    name: "group_comments_data.xlsx",
+    type: FacebookDataType.GROUP_COMMENTS,
+    data: groupCommentsData,
+    rowCount: groupCommentsData.length,
     processed: true,
     uploadDate: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     sourceType: DataSourceType.UID_PROFILE,
@@ -423,9 +645,38 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
     uploaderName: 'Người dùng Demo'
   };
 
-  // Demo file 4: Groups data (150 records)
+  // Demo file 6: Page Comments data (50 records)
+  const pageCommentsData = [];
+  for (let i = 0; i < 50; i++) {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    pageCommentsData.push({ 
+      uid: user.uid, 
+      comment_id: getRandomId('pcmt'), 
+      content: getRandomComment(), 
+      commented_at: getRandomDate(),
+      comment_type: 'page',
+      likes: Math.floor(Math.random() * 50),
+      page_id: getRandomId('page'),
+      page_name: getRandomPageName()
+    });
+  }
+  
+  const pageCommentsFile: UploadedFile = {
+    id: uuidv4(),
+    name: "page_comments_data.xlsx",
+    type: FacebookDataType.PAGE_COMMENTS,
+    data: pageCommentsData,
+    rowCount: pageCommentsData.length,
+    processed: true,
+    uploadDate: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    sourceType: DataSourceType.UID_PROFILE,
+    uploaderId: 'demo',
+    uploaderName: 'Người dùng Demo'
+  };
+
+  // Demo file 7: Groups data (50 records)
   const groupsData = [];
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 50; i++) {
     const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
     groupsData.push({ 
       uid: user.uid, 
@@ -443,15 +694,15 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
     data: groupsData,
     rowCount: groupsData.length,
     processed: true,
-    uploadDate: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    uploadDate: new Date(now.getTime() - 1.5 * 24 * 60 * 60 * 1000), // 1.5 days ago
     sourceType: DataSourceType.UID_PROFILE,
     uploaderId: 'demo',
     uploaderName: 'Người dùng Demo'
   };
 
-  // Demo file 5: Pages liked data (200 records)
+  // Demo file 8: Pages liked data (50 records)
   const pagesLikedData = [];
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 50; i++) {
     const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
     pagesLikedData.push({ 
       uid: user.uid, 
@@ -474,5 +725,102 @@ export const createDemoData = (largeDataset = false): UploadedFile[] => {
     uploaderName: 'Người dùng Demo'
   };
 
-  return [friendsFile, postsFile, commentsFile, groupsFile, pagesLikedFile];
+  // Demo file 9: Check-ins data (50 records)
+  const checkInsData = [];
+  for (let i = 0; i < 50; i++) {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    checkInsData.push({
+      uid: user.uid,
+      location_id: getRandomId('loc'),
+      location_name: getRandomPlaceName(),
+      checked_in_at: getRandomDate(),
+      coordinates: {
+        lat: (Math.random() * 20) + 10, // Approximate latitude for Vietnam
+        lng: (Math.random() * 10) + 100  // Approximate longitude for Vietnam
+      }
+    });
+  }
+  
+  const checkInsFile: UploadedFile = {
+    id: uuidv4(),
+    name: "check_ins.xlsx",
+    type: FacebookDataType.CHECK_INS,
+    data: checkInsData,
+    rowCount: checkInsData.length,
+    processed: true,
+    uploadDate: new Date(now.getTime() - 0.5 * 24 * 60 * 60 * 1000), // 0.5 days ago
+    sourceType: DataSourceType.UID_PROFILE,
+    uploaderId: 'demo',
+    uploaderName: 'Người dùng Demo'
+  };
+
+  // Demo file 10: Events data (50 records)
+  const eventsData = [];
+  for (let i = 0; i < 50; i++) {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    eventsData.push({
+      uid: user.uid,
+      event_id: getRandomId('event'),
+      event_name: `Sự kiện ${Math.floor(Math.random() * 1000)}`,
+      event_date: getRandomDate(),
+      location: getRandomPlaceName(),
+      joined_at: getRandomDate()
+    });
+  }
+  
+  const eventsFile: UploadedFile = {
+    id: uuidv4(),
+    name: "events.xlsx",
+    type: FacebookDataType.EVENTS,
+    data: eventsData,
+    rowCount: eventsData.length,
+    processed: true,
+    uploadDate: new Date(now.getTime() - 0.2 * 24 * 60 * 60 * 1000), // 0.2 days ago
+    sourceType: DataSourceType.UID_PROFILE,
+    uploaderId: 'demo',
+    uploaderName: 'Người dùng Demo'
+  };
+
+  // Demo file 11: Interactions data (50 records)
+  const interactionsData = [];
+  for (let i = 0; i < 50; i++) {
+    const user = demoUsers[Math.floor(Math.random() * demoUsers.length)];
+    const interactionTypes = ['like', 'comment', 'share', 'mention', 'tag'];
+    interactionsData.push({
+      uid: user.uid,
+      interaction_id: getRandomId('int'),
+      interaction_type: interactionTypes[Math.floor(Math.random() * interactionTypes.length)],
+      interaction_date: getRandomDate(),
+      target_uid: getRandomUID(),
+      target_name: getRandomName(),
+      content_id: getRandomId('cnt')
+    });
+  }
+  
+  const interactionsFile: UploadedFile = {
+    id: uuidv4(),
+    name: "interactions.xlsx",
+    type: FacebookDataType.INTERACTIONS,
+    data: interactionsData,
+    rowCount: interactionsData.length,
+    processed: true,
+    uploadDate: new Date(now.getTime()), // current time
+    sourceType: DataSourceType.UID_PROFILE,
+    uploaderId: 'demo',
+    uploaderName: 'Người dùng Demo'
+  };
+
+  return [
+    friendsFile, 
+    wallPostsFile, 
+    groupPostsFile, 
+    wallCommentsFile, 
+    groupCommentsFile, 
+    pageCommentsFile, 
+    groupsFile, 
+    pagesLikedFile, 
+    checkInsFile,
+    eventsFile,
+    interactionsFile
+  ];
 };

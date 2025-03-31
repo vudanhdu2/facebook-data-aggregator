@@ -54,10 +54,16 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
   };
 
   // Memoize data to prevent unnecessary recalculations
-  const postsData = useMemo(() => userData.data.posts || [], [userData.data.posts]);
-  const commentsData = useMemo(() => userData.data.comments || [], [userData.data.comments]);
+  const postsData = useMemo(() => userData.data.posts?.filter(post => post.post_type === 'wall') || [], [userData.data.posts]);
+  const commentsData = useMemo(() => userData.data.comments?.filter(comment => comment.comment_type === 'wall') || [], [userData.data.comments]);
+  const groupPostsData = useMemo(() => userData.data.posts?.filter(post => post.post_type === 'group') || [], [userData.data.posts]);
+  const groupCommentsData = useMemo(() => userData.data.comments?.filter(comment => comment.comment_type === 'group') || [], [userData.data.comments]);
+  const pageCommentsData = useMemo(() => userData.data.comments?.filter(comment => comment.comment_type === 'page') || [], [userData.data.comments]);
   const groupsData = useMemo(() => userData.data.groups || [], [userData.data.groups]);
   const pagesLikedData = useMemo(() => userData.data.pagesLiked || [], [userData.data.pagesLiked]);
+  const checkInsData = useMemo(() => userData.data.checkIns || [], [userData.data.checkIns]);
+  const eventsData = useMemo(() => userData.data.events || [], [userData.data.events]);
+  const interactionsData = useMemo(() => userData.data.interactions || [], [userData.data.interactions]);
 
   // Prepare timeline data - memoized to prevent recalculation
   const prepareTimelineData = (data: any[], dateField: string) => {
@@ -82,10 +88,10 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
   // Memoize timeline data
   const postsTimeline = useMemo(() => prepareTimelineData(postsData, 'posted_at'), [postsData]);
   const wallPostsTimeline = postsTimeline;
-  const groupPostsTimeline = useMemo(() => prepareTimelineData([], 'posted_at'), []);
+  const groupPostsTimeline = useMemo(() => prepareTimelineData(groupPostsData, 'posted_at'), [groupPostsData]);
   const commentsTimeline = useMemo(() => prepareTimelineData(commentsData, 'commented_at'), [commentsData]);
-  const groupCommentsTimeline = useMemo(() => prepareTimelineData([], 'commented_at'), []);
-  const pageCommentsTimeline = useMemo(() => prepareTimelineData([], 'commented_at'), []);
+  const groupCommentsTimeline = useMemo(() => prepareTimelineData(groupCommentsData, 'commented_at'), [groupCommentsData]);
+  const pageCommentsTimeline = useMemo(() => prepareTimelineData(pageCommentsData, 'commented_at'), [pageCommentsData]);
 
   // Memoized StatCard component for better performance - now with proper type definition
   const StatCard = React.memo<StatCardProps>(({ title, value, icon, data = [], description = '' }) => (
@@ -102,6 +108,18 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
     </Card>
   ));
 
+  // Calculate counts of different data types
+  const wallPostsCount = postsData.length;
+  const wallCommentsCount = commentsData.length;
+  const groupPostsCount = groupPostsData.length;
+  const groupCommentsCount = groupCommentsData.length;
+  const pageCommentsCount = pageCommentsData.length;
+  const pagesLikedCount = userData.pagesLikedCount;
+  const checkInsCount = userData.checkInsCount;
+  const eventsCount = eventsData.length;
+  const groupsCount = userData.groupsCount;
+  const interactionsCount = interactionsData.length;
+
   // Decrease the amount of work in the render function
   return (
     <div className="space-y-6">
@@ -116,59 +134,64 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <StatCard 
               title="Số bài đăng trên tường"
-              value={userData.postsCount}
+              value={wallPostsCount}
               icon={<FileText className="h-5 w-5 text-primary" />}
               data={postsData}
               description="Chi tiết các bài đăng trên tường cá nhân"
             />
             <StatCard 
               title="Số cmt trên tường"
-              value={userData.commentsCount}
+              value={wallCommentsCount}
               icon={<MessageCircle className="h-5 w-5 text-primary" />}
               data={commentsData}
             />
             <StatCard 
               title="Số bài đăng trên nhóm"
-              value={0}
+              value={groupPostsCount}
               icon={<Share2 className="h-5 w-5 text-primary" />}
+              data={groupPostsData}
             />
             <StatCard 
               title="Số cmt trên nhóm"
-              value={0}
+              value={groupCommentsCount}
               icon={<MessageCircle className="h-5 w-5 text-primary" />}
+              data={groupCommentsData}
             />
             <StatCard 
               title="Số cmt trên page"
-              value={0}
+              value={pageCommentsCount}
               icon={<MessageCircle className="h-5 w-5 text-primary" />}
+              data={pageCommentsData}
             />
             <StatCard 
               title="Số page đã like"
-              value={userData.pagesLikedCount}
+              value={pagesLikedCount}
               icon={<ThumbsUp className="h-5 w-5 text-primary" />}
               data={pagesLikedData}
             />
             <StatCard 
               title="Số page đã check in"
-              value={userData.checkInsCount}
+              value={checkInsCount}
               icon={<MapPin className="h-5 w-5 text-primary" />}
-              data={userData.data.checkIns || []}
+              data={checkInsData}
             />
             <StatCard 
               title="Số event tham gia"
-              value={0}
+              value={eventsCount}
               icon={<Calendar className="h-5 w-5 text-primary" />}
+              data={eventsData}
             />
             <StatCard 
               title="Số nhóm đã tham gia"
-              value={userData.groupsCount}
+              value={groupsCount}
               icon={<Users className="h-5 w-5 text-primary" />}
               data={groupsData}
             />
             <StatCard 
               title="Số người tương tác"
-              value={0}
+              value={interactionsCount}
               icon={<UserCircle className="h-5 w-5 text-primary" />}
+              data={interactionsData}
             />
           </div>
         </TabsContent>
@@ -178,7 +201,7 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
           <TabsContent value="posts" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Bài đăng theo thời gian</CardTitle>
+                <CardTitle>Bài đăng trên tường theo thời gian</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
@@ -246,7 +269,7 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
           <TabsContent value="activities" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Bình luận theo thời gian</CardTitle>
+                <CardTitle>Bình luận trên tường theo thời gian</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
