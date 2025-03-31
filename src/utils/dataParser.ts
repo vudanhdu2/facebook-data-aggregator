@@ -1,4 +1,3 @@
-
 import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile } from '../types';
 import * as XLSX from 'xlsx';
 
@@ -22,7 +21,8 @@ export async function readExcelFile(file: File): Promise<UploadedFile | null> {
           type: dataType,
           data: jsonData,
           rowCount: jsonData.length,
-          processed: false
+          processed: false,
+          manualType: false
         });
       } catch (error) {
         console.error("Error parsing Excel file:", error);
@@ -58,6 +58,18 @@ function determineDataType(data: any[], fileName: string): FacebookDataType {
     return FacebookDataType.PAGES_LIKED;
   } else if (fileNameLower.includes('check') || fileNameLower.includes('địa điểm')) {
     return FacebookDataType.CHECK_INS;
+  } else if (fileNameLower.includes('profile') || fileNameLower.includes('hồ sơ')) {
+    return FacebookDataType.PROFILES;
+  } else if (fileNameLower.includes('message') || fileNameLower.includes('tin nhắn')) {
+    return FacebookDataType.MESSAGES;
+  } else if (fileNameLower.includes('photo') || fileNameLower.includes('ảnh')) {
+    return FacebookDataType.PHOTOS;
+  } else if (fileNameLower.includes('video')) {
+    return FacebookDataType.VIDEOS;
+  } else if (fileNameLower.includes('event') || fileNameLower.includes('sự kiện')) {
+    return FacebookDataType.EVENTS;
+  } else if (fileNameLower.includes('reaction') || fileNameLower.includes('biểu cảm')) {
+    return FacebookDataType.REACTIONS;
   }
   
   // If filename doesn't give us clues, check headers

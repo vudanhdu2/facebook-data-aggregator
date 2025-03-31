@@ -3,9 +3,29 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { UploadedFile, FacebookDataType } from '@/types';
+import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS } from '@/types';
 import { readExcelFile } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void;
@@ -15,6 +35,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedFileType, setSelectedFileType] = useState<FacebookDataType | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -27,10 +48,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     setIsDragging(false);
   };
 
-  const processFile = async (file: File) => {
+  const processFile = async (file: File, manualType?: FacebookDataType) => {
     try {
       const result = await readExcelFile(file);
       if (result) {
+        // If a manual type was selected, override the auto-detected type
+        if (manualType) {
+          result.type = manualType;
+          result.manualType = true;
+        }
         return result;
       }
     } catch (error) {
@@ -63,7 +89,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       return;
     }
     
-    const processedFiles = await Promise.all(newFiles.map(processFile));
+    const processedFiles = await Promise.all(
+      newFiles.map(file => processFile(file, selectedFileType || undefined))
+    );
     const validFiles = processedFiles.filter(Boolean) as UploadedFile[];
     
     setFiles(prevFiles => {
@@ -97,7 +125,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       return;
     }
     
-    const processedFiles = await Promise.all(newFiles.map(processFile));
+    const processedFiles = await Promise.all(
+      newFiles.map(file => processFile(file, selectedFileType || undefined))
+    );
     const validFiles = processedFiles.filter(Boolean) as UploadedFile[];
     
     setFiles(prevFiles => {
@@ -122,42 +152,81 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     onFilesUploaded(newFiles);
   };
 
+  const updateFileType = (fileIndex: number, newType: FacebookDataType) => {
+    const updatedFiles = [...files];
+    updatedFiles[fileIndex] = {
+      ...updatedFiles[fileIndex],
+      type: newType,
+      manualType: true
+    };
+    
+    setFiles(updatedFiles);
+    onFilesUploaded(updatedFiles);
+    
+    toast({
+      title: "Đã cập nhật loại dữ liệu",
+      description: `File "${files[fileIndex].name}" đã được cập nhật thành ${getFacebookDataTypeLabel(newType)}`
+    });
+  };
+
   const getFacebookDataTypeLabel = (type: FacebookDataType): string => {
-    switch (type) {
-      case FacebookDataType.FRIENDS: return 'Danh sách bạn bè';
-      case FacebookDataType.GROUPS: return 'Danh sách nhóm';
-      case FacebookDataType.POSTS: return 'Danh sách bài đăng';
-      case FacebookDataType.COMMENTS: return 'Danh sách bình luận';
-      case FacebookDataType.PAGES_LIKED: return 'Danh sách trang đã thích';
-      case FacebookDataType.CHECK_INS: return 'Danh sách địa điểm đã check-in';
-      default: return 'Không xác định';
-    }
+    const option = FILE_TYPE_OPTIONS.find(opt => opt.value === type);
+    return option ? option.label : 'Không xác định';
   };
 
   return (
     <div className="space-y-4 w-full">
       <Card>
         <CardContent className="pt-6">
-          <div
-            className={`file-drop-area ${isDragging ? 'border-primary bg-primary/10' : ''} ${isProcessing ? 'opacity-60 cursor-wait' : ''}`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileInputChange}
-              accept=".xls,.xlsx"
-              multiple
-              className="hidden"
-              disabled={isProcessing}
-            />
-            <Upload className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-            <div className="text-center">
-              <p className="font-medium text-gray-700 mb-1">Kéo thả file hoặc nhấn để chọn</p>
-              <p className="text-sm text-gray-500">Chỉ hỗ trợ file Excel (.xls, .xlsx)</p>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Select
+                value={selectedFileType || undefined}
+                onValueChange={(value) => setSelectedFileType(value as FacebookDataType)}
+              >
+                <SelectTrigger className="w-full sm:w-64">
+                  <SelectValue placeholder="Chọn loại dữ liệu (tùy chọn)" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {FILE_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Chọn file
+              </Button>
+            </div>
+
+            <div
+              className={`file-drop-area ${isDragging ? 'border-primary bg-primary/10' : ''} ${isProcessing ? 'opacity-60 cursor-wait' : ''} border-2 border-dashed rounded-lg p-8 text-center`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileInputChange}
+                accept=".xls,.xlsx"
+                multiple
+                className="hidden"
+                disabled={isProcessing}
+              />
+              <Upload className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+              <div className="text-center">
+                <p className="font-medium text-gray-700 mb-1">Kéo thả file hoặc nhấn để chọn</p>
+                <p className="text-sm text-gray-500">Chỉ hỗ trợ file Excel (.xls, .xlsx)</p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -176,18 +245,39 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                       <p className="font-medium text-sm">{file.name}</p>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs text-gray-500">{file.rowCount} dòng</span>
-                        <span className="text-xs bg-secondary/10 text-secondary px-2 py-0.5 rounded-full">
-                          {getFacebookDataTypeLabel(file.type)}
-                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
+                          <span className="text-xs bg-secondary/10 text-secondary px-2 py-0.5 rounded-full">
+                            {getFacebookDataTypeLabel(file.type)}
+                          </span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Chọn loại dữ liệu</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {FILE_TYPE_OPTIONS.map((option) => (
+                          <DropdownMenuItem 
+                            key={option.value}
+                            onClick={() => updateFileType(index, option.value)}
+                            className={file.type === option.value ? "bg-primary/10" : ""}
+                          >
+                            {option.label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    
                     {file.processed ? (
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     ) : (
                       <AlertCircle className="h-5 w-5 text-amber-500" />
                     )}
+                    
                     <Button 
                       variant="ghost" 
                       size="icon"
