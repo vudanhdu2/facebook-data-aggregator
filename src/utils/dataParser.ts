@@ -1,3 +1,4 @@
+
 import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile, UIDSource, DataSourceType } from '../types';
 import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
@@ -121,7 +122,9 @@ export function aggregateDataByUID(files: UploadedFile[]): AggregatedUserData[] 
             posts: [],
             comments: [],
             pagesLiked: [],
-            checkIns: []
+            checkIns: [],
+            events: [],      // Added missing events array
+            interactions: [] // Added missing interactions array
           }
         });
       }
