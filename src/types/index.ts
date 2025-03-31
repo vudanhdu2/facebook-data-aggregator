@@ -21,6 +21,12 @@ export enum FacebookDataType {
   UNKNOWN = 'unknown'
 }
 
+export interface UIDSource {
+  fileName: string;
+  fileType: FacebookDataType;
+  timestamp: Date;
+}
+
 export interface AggregatedUserData {
   uid: string;
   name?: string;
@@ -31,6 +37,7 @@ export interface AggregatedUserData {
   pagesLikedCount: number;
   checkInsCount: number;
   lastActive?: Date;
+  sources: UIDSource[]; // Track where this UID came from
   data: {
     friends: any[];
     groups: any[];
@@ -48,6 +55,7 @@ export interface UploadedFile {
   rowCount: number;
   processed: boolean;
   manualType?: boolean; // Track if type was manually selected
+  uploadDate: Date; // Add upload date for each file
 }
 
 export const FILE_TYPE_OPTIONS = [
@@ -65,4 +73,3 @@ export const FILE_TYPE_OPTIONS = [
   { value: FacebookDataType.REACTIONS, label: 'Các biểu cảm (reaction)' },
   { value: FacebookDataType.UNKNOWN, label: 'Không xác định' }
 ];
-

@@ -1,4 +1,5 @@
-import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile } from '../types';
+
+import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile, UIDSource } from '../types';
 import * as XLSX from 'xlsx';
 
 export async function readExcelFile(file: File): Promise<UploadedFile | null> {
@@ -22,7 +23,8 @@ export async function readExcelFile(file: File): Promise<UploadedFile | null> {
           data: jsonData,
           rowCount: jsonData.length,
           processed: false,
-          manualType: false
+          manualType: false,
+          uploadDate: new Date() // Add current timestamp
         });
       } catch (error) {
         console.error("Error parsing Excel file:", error);
@@ -109,6 +111,7 @@ export function aggregateDataByUID(files: UploadedFile[]): AggregatedUserData[] 
           commentsCount: 0,
           pagesLikedCount: 0,
           checkInsCount: 0,
+          sources: [], // Initialize empty sources array
           data: {
             friends: [],
             groups: [],
@@ -121,6 +124,22 @@ export function aggregateDataByUID(files: UploadedFile[]): AggregatedUserData[] 
       }
       
       const userData = userMap.get(uid)!;
+      
+      // Add source to the user's sources list if it doesn't already exist
+      const source: UIDSource = {
+        fileName: file.name,
+        fileType: file.type,
+        timestamp: file.uploadDate
+      };
+      
+      // Check if this source already exists to avoid duplicates
+      const sourceExists = userData.sources.some(
+        s => s.fileName === source.fileName && s.fileType === source.fileType
+      );
+      
+      if (!sourceExists) {
+        userData.sources.push(source);
+      }
       
       switch (file.type) {
         case FacebookDataType.FRIENDS:
@@ -248,6 +267,7 @@ export function getStatistics(aggregatedData: AggregatedUserData[]) {
     stats.totalComments += user.commentsCount;
     stats.totalPagesLiked += user.pagesLikedCount;
     stats.totalCheckIns += user.checkInsCount;
+    stats.totalSources += user.sources.length;
     
     return stats;
   }, {
@@ -257,6 +277,23 @@ export function getStatistics(aggregatedData: AggregatedUserData[]) {
     totalPosts: 0,
     totalComments: 0,
     totalPagesLiked: 0,
-    totalCheckIns: 0
+    totalCheckIns: 0,
+    totalSources: 0
   });
+}
+
+// New function to get unique sources for all UIDs
+export function getAllSourcesFromData(aggregatedData: AggregatedUserData[]): UIDSource[] {
+  const uniqueSources = new Map<string, UIDSource>();
+  
+  aggregatedData.forEach(user => {
+    user.sources.forEach(source => {
+      const key = `${source.fileName}-${source.fileType}`;
+      if (!uniqueSources.has(key)) {
+        uniqueSources.set(key, source);
+      }
+    });
+  });
+  
+  return Array.from(uniqueSources.values());
 }

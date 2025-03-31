@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS } from '@/types';
@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { format } from 'date-fns';
 
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void;
@@ -243,8 +244,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                     <FileSpreadsheet className="h-5 w-5 text-secondary" />
                     <div>
                       <p className="font-medium text-sm">{file.name}</p>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500">{file.rowCount} dòng</span>
+                      <div className="flex items-center space-x-3 text-xs text-gray-500">
+                        <span>{file.rowCount} dòng</span>
+                        <div className="flex items-center">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          <span>{format(file.uploadDate, 'dd/MM/yyyy HH:mm')}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
