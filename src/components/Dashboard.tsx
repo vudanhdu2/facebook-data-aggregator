@@ -8,16 +8,21 @@ import DataDisplay from './DataDisplay';
 import { UploadedFile, AggregatedUserData } from '@/types';
 import { aggregateDataByUID } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
-import { Database, Upload, History, Users } from 'lucide-react';
+import { Database, Upload, History, Users, FileText, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { DataTable } from '@/components/ui/data-table';
 import { formatDate } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import DataDialog from './DataDialog';
 
 const Dashboard: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [aggregatedData, setAggregatedData] = useState<AggregatedUserData[]>([]);
   const [activeTab, setActiveTab] = useState<string>("upload");
+  const [selectedFileData, setSelectedFileData] = useState<any[] | null>(null);
+  const [isDataDialogOpen, setIsDataDialogOpen] = useState<boolean>(false);
+  const [selectedFileName, setSelectedFileName] = useState<string>("");
   const { toast } = useToast();
   const location = useLocation();
   const { user } = useAuth();
@@ -70,6 +75,21 @@ const Dashboard: React.FC = () => {
     ? uploadedFiles 
     : uploadedFiles.filter(file => file.uploaderId === user?.id);
     
+  // Function to handle viewing file data
+  const handleViewData = (file: UploadedFile) => {
+    if (file && file.data) {
+      setSelectedFileData(file.data);
+      setSelectedFileName(file.name);
+      setIsDataDialogOpen(true);
+    } else {
+      toast({
+        title: "Không có dữ liệu",
+        description: "Không thể tìm thấy dữ liệu cho file này.",
+        variant: "destructive"
+      });
+    }
+  };
+    
   // Define columns for the history data table
   const historyColumns = [
     { key: 'name', header: 'Tên file', filterable: true },
@@ -88,6 +108,21 @@ const Dashboard: React.FC = () => {
       filterable: true, 
       render: (value: number, row: any) => 
         row.size ? `${(row.size / 1024).toFixed(2)} KB` : 'N/A'
+    },
+    {
+      key: 'actions',
+      header: 'Xem dữ liệu',
+      render: (_: any, row: UploadedFile) => (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex items-center gap-1 text-primary"
+          onClick={() => handleViewData(row)}
+        >
+          <Eye className="h-4 w-4" />
+          <span>Xem</span>
+        </Button>
+      )
     }
   ];
 
@@ -149,6 +184,15 @@ const Dashboard: React.FC = () => {
       {activeTab === "stats" && (
         <Stats aggregatedData={aggregatedData} />
       )}
+
+      {/* Dialog for viewing file data */}
+      <DataDialog 
+        isOpen={isDataDialogOpen} 
+        onClose={() => setIsDataDialogOpen(false)}
+        title={`Dữ liệu file: ${selectedFileName}`}
+        description="Chi tiết dữ liệu trong file đã tải lên"
+        data={selectedFileData || []}
+      />
     </div>
   );
 };
