@@ -2,11 +2,13 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User, UserRole } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { v4 as uuidv4 } from 'uuid';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
+  register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
   isAdmin: () => boolean;
   isMember: () => boolean;
@@ -35,6 +37,7 @@ const MOCK_USERS: User[] = [
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -61,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Find user with matching email (in a real app, would also check password)
-      const matchedUser = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+      const matchedUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
       
       if (matchedUser) {
         setUser(matchedUser);
@@ -92,6 +95,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (email: string, password: string, name: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      // Simulate API request delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if email already exists
+      const existingUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (existingUser) {
+        toast({
+          title: "Đăng ký thất bại",
+          description: "Email này đã được sử dụng",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Create new user
+      const newUser: User = {
+        id: uuidv4(),
+        email,
+        name,
+        role: UserRole.MEMBER,
+        createdAt: new Date()
+      };
+      
+      // Add to mock users list
+      setUsers(prev => [...prev, newUser]);
+      
+      // Log in the new user
+      setUser(newUser);
+      localStorage.setItem('currentUser', JSON.stringify(newUser));
+      
+      toast({
+        title: "Đăng ký thành công",
+        description: `Chào mừng ${name || email}!`
+      });
+      return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast({
+        title: "Lỗi đăng ký",
+        description: "Có lỗi xảy ra trong quá trình đăng ký",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('currentUser');
@@ -110,7 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, isAdmin, isMember }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, isAdmin, isMember }}>
       {children}
     </AuthContext.Provider>
   );

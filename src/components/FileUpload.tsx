@@ -6,6 +6,7 @@ import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA
 import { readExcelFile } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Select,
   SelectContent,
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { format } from 'date-fns';
 import { createDemoData } from '@/utils/demoData';
+import { v4 as uuidv4 } from 'uuid';
 
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void;
@@ -42,6 +44,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
   const [sourceUID, setSourceUID] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -65,6 +68,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         if (sourceUID.trim()) {
           result.sourceUID = sourceUID.trim();
         }
+        
+        if (user) {
+          result.uploaderId = user.id;
+          result.uploaderName = user.name || user.email;
+        } else {
+          result.uploaderId = "anonymous";
+          result.uploaderName = "Anonymous User";
+        }
+        
+        result.id = uuidv4();
         
         return result;
       }
@@ -212,8 +225,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
 
   const loadDemoData = () => {
     const demoFiles = createDemoData();
+    
+    const enhancedDemoFiles = demoFiles.map(file => ({
+      ...file,
+      uploaderId: user?.id || "demo",
+      uploaderName: user?.name || user?.email || "Demo User"
+    }));
+    
     setFiles(prevFiles => {
-      const combinedFiles = [...prevFiles, ...demoFiles];
+      const combinedFiles = [...prevFiles, ...enhancedDemoFiles];
       onFilesUploaded(combinedFiles);
       return combinedFiles;
     });
@@ -232,8 +252,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
 
     setTimeout(() => {
       const largeDataFiles = createDemoData(true);
+      
+      const enhancedDemoFiles = largeDataFiles.map(file => ({
+        ...file,
+        uploaderId: user?.id || "demo",
+        uploaderName: user?.name || user?.email || "Demo User"
+      }));
+      
       setFiles(prevFiles => {
-        const combinedFiles = [...prevFiles, ...largeDataFiles];
+        const combinedFiles = [...prevFiles, ...enhancedDemoFiles];
         onFilesUploaded(combinedFiles);
         return combinedFiles;
       });
@@ -367,6 +394,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
               <div className="text-center">
                 <p className="font-medium text-gray-700 mb-1">Kéo thả file hoặc nhấn để chọn</p>
                 <p className="text-sm text-gray-500">Chỉ hỗ trợ file Excel (.xls, .xlsx)</p>
+                {!user && (
+                  <p className="mt-2 text-sm text-primary font-medium">
+                    Đăng nhập để lưu lại lịch sử tải lên của bạn
+                  </p>
+                )}
               </div>
             </div>
           </div>
