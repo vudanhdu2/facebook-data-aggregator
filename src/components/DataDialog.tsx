@@ -30,10 +30,12 @@ interface DataDialogProps {
   onClose: () => void;
   title: string;
   description?: string;
-  data: any[];
+  data?: any[];
+  children?: React.ReactNode;
+  wide?: boolean;
 }
 
-const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, description, data }) => {
+const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, description, data = [], children, wide = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -100,10 +102,6 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
   const isPreviousDisabled = currentPage === 1;
   const isNextDisabled = currentPage === totalPages;
 
-  if (!data.length) {
-    return null;
-  }
-  
   // Pagination item renderer - optimizes the pagination display
   const renderPaginationItems = () => {
     const items = [];
@@ -146,118 +144,124 @@ const DataDialog: React.FC<DataDialogProps> = ({ isOpen, onClose, title, descrip
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[90vw] max-h-[90vh]">
+      <DialogContent className={`sm:max-w-${wide ? '[90vw]' : '[90vw]'} max-h-[90vh]`}>
         <DialogHeader>
-          <DialogTitle>{title} ({filteredData.length} bản ghi)</DialogTitle>
+          <DialogTitle>{title} {data.length > 0 && `(${filteredData.length} bản ghi)`}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         
-        <div className="relative mb-4">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Tìm kiếm..."
-            className="pl-8"
-            value={searchQuery}
-            onChange={handleSearchChange}
-          />
-        </div>
-        
-        <ScrollArea className="h-[60vh]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map((column) => (
-                  <TableHead key={column}>{column}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                // Show loading state
-                Array.from({ length: itemsPerPage }).map((_, index) => (
-                  <TableRow key={`loading-${index}`}>
-                    {columns.map((column, colIndex) => (
-                      <TableCell key={`loading-${index}-${colIndex}`}>
-                        <Skeleton className="h-5 w-full" />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : paginatedData.length > 0 ? (
-                // Show data
-                paginatedData.map((item, index) => (
-                  <TableRow key={index}>
+        {children ? (
+          children
+        ) : (
+          <>
+            <div className="relative mb-4">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Tìm kiếm..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={handleSearchChange}
+              />
+            </div>
+            
+            <ScrollArea className="h-[60vh]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {columns.map((column) => (
-                      <TableCell key={`${index}-${column}`}>
-                        {typeof item[column] === 'object' && item[column] instanceof Date 
-                          ? formatDate(item[column])
-                          : typeof item[column] === 'object' && item[column] !== null
-                          ? JSON.stringify(item[column])
-                          : String(item[column])}
-                      </TableCell>
+                      <TableHead key={column}>{column}</TableHead>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                // No results
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="text-center py-8">
-                    Không tìm thấy kết quả phù hợp
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-        
-        {totalPages > 1 && (
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => !isPreviousDisabled && handlePageChange(currentPage - 1)}
-                  className={isPreviousDisabled ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-              
-              {renderPaginationItems()}
-              
-              {totalPages > 5 && currentPage < totalPages - 2 && (
-                <>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    // Show loading state
+                    Array.from({ length: itemsPerPage }).map((_, index) => (
+                      <TableRow key={`loading-${index}`}>
+                        {columns.map((column, colIndex) => (
+                          <TableCell key={`loading-${index}-${colIndex}`}>
+                            <Skeleton className="h-5 w-full" />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : paginatedData.length > 0 ? (
+                    // Show data
+                    paginatedData.map((item, index) => (
+                      <TableRow key={index}>
+                        {columns.map((column) => (
+                          <TableCell key={`${index}-${column}`}>
+                            {typeof item[column] === 'object' && item[column] instanceof Date 
+                              ? formatDate(item[column])
+                              : typeof item[column] === 'object' && item[column] !== null
+                              ? JSON.stringify(item[column])
+                              : String(item[column])}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    // No results
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="text-center py-8">
+                        Không tìm thấy kết quả phù hợp
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+            
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
                   <PaginationItem>
-                    <PaginationEllipsis />
+                    <PaginationPrevious 
+                      onClick={() => !isPreviousDisabled && handlePageChange(currentPage - 1)}
+                      className={isPreviousDisabled ? "pointer-events-none opacity-50" : ""}
+                    />
                   </PaginationItem>
+                  
+                  {renderPaginationItems()}
+                  
+                  {totalPages > 5 && currentPage < totalPages - 2 && (
+                    <>
+                      <PaginationItem>
+                        <PaginationEllipsis />
+                      </PaginationItem>
+                      <PaginationItem>
+                        <PaginationLink onClick={() => handlePageChange(totalPages)}>
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+                  
                   <PaginationItem>
-                    <PaginationLink onClick={() => handlePageChange(totalPages)}>
-                      {totalPages}
-                    </PaginationLink>
+                    <PaginationNext 
+                      onClick={() => !isNextDisabled && handlePageChange(currentPage + 1)}
+                      className={isNextDisabled ? "pointer-events-none opacity-50" : ""}
+                    />
                   </PaginationItem>
-                </>
-              )}
-              
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => !isNextDisabled && handlePageChange(currentPage + 1)}
-                  className={isNextDisabled ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        )}
-
-        <DialogFooter className="flex justify-between">
-          <div className="text-sm text-gray-500">
-            {isLoading ? (
-              <div className="flex items-center">
-                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                Đang xử lý dữ liệu...
-              </div>
-            ) : (
-              `Hiển thị ${paginatedData.length} / ${filteredData.length} bản ghi`
+                </PaginationContent>
+              </Pagination>
             )}
-          </div>
-          <Button onClick={onClose}>Đóng</Button>
-        </DialogFooter>
+
+            <DialogFooter className="flex justify-between">
+              <div className="text-sm text-gray-500">
+                {isLoading ? (
+                  <div className="flex items-center">
+                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    Đang xử lý dữ liệu...
+                  </div>
+                ) : (
+                  `Hiển thị ${paginatedData.length} / ${filteredData.length} bản ghi`
+                )}
+              </div>
+              <Button onClick={onClose}>Đóng</Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

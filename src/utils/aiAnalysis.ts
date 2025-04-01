@@ -73,21 +73,21 @@ export async function findConnections(userData: AggregatedUserData[]): Promise<{
   // Process connections in chunks to avoid UI freezing
   const connections: Array<{ source: string, target: string, strength: number, type: string }> = [];
   
-  // Process each pair of users to find connections
-  await processInChunks(userData, (user1, index) => {
+  // Fix: Correctly pass a function that accepts a single item parameter
+  await processInChunks(userData, (user, index) => {
     userData.slice(index + 1).forEach(user2 => {
       let connectionStrength = 0;
       const connectionTypes: string[] = [];
       
       // Check for connections in friends lists
-      if (user1.data.friends.some(friend => 
+      if (user.data.friends.some(friend => 
         typeof friend.uid === 'string' && friend.uid === user2.uid)) {
         connectionStrength += 10;
         connectionTypes.push('friend');
       }
       
       // Check for shared groups
-      const user1Groups = new Set(user1.data.groups.map(g => g.group_id || g.id));
+      const user1Groups = new Set(user.data.groups.map(g => g.group_id || g.id));
       const sharedGroups = user2.data.groups.filter(g => 
         user1Groups.has(g.group_id || g.id)
       );
@@ -100,7 +100,7 @@ export async function findConnections(userData: AggregatedUserData[]): Promise<{
       // If we found any connections, add to results
       if (connectionStrength > 0) {
         connections.push({
-          source: user1.uid,
+          source: user.uid,
           target: user2.uid,
           strength: connectionStrength,
           type: connectionTypes.join(', ')
