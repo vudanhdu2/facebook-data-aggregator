@@ -73,8 +73,11 @@ export async function findConnections(userData: AggregatedUserData[]): Promise<{
   // Process connections in chunks to avoid UI freezing
   const connections: Array<{ source: string, target: string, strength: number, type: string }> = [];
   
-  // Fix: Correctly pass a function that accepts a single item parameter
-  await processInChunks(userData, (user, index) => {
+  // Fix: Modify the function signature to match what processInChunks expects
+  await processInChunks(userData, (user) => {
+    // Get the index manually inside the callback
+    const index = userData.indexOf(user);
+    
     userData.slice(index + 1).forEach(user2 => {
       let connectionStrength = 0;
       const connectionTypes: string[] = [];
