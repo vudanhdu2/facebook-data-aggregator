@@ -9,9 +9,19 @@ import { Badge } from '@/components/ui/badge';
 
 interface DataDisplayProps {
   aggregatedData: AggregatedUserData[];
+  additionalColumns?: Array<{
+    key: string;
+    header: string;
+    render: (value: any, row: any) => React.ReactNode;
+  }>;
+  onAIAnalysis?: (user: AggregatedUserData) => void;
 }
 
-const DataDisplay: React.FC<DataDisplayProps> = ({ aggregatedData }) => {
+const DataDisplay: React.FC<DataDisplayProps> = ({ 
+  aggregatedData, 
+  additionalColumns = [],
+  onAIAnalysis 
+}) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<AggregatedUserData | null>(null);
   const [viewMode, setViewMode] = useState<'basic' | 'advanced'>('basic');
@@ -56,7 +66,7 @@ const DataDisplay: React.FC<DataDisplayProps> = ({ aggregatedData }) => {
     }));
   }, [filteredData]);
   
-  const userColumns = [
+  const baseUserColumns = [
     { key: 'name', header: 'Tên', filterable: true },
     { key: 'uid', header: 'UID', filterable: true },
     { key: 'friendsCount', header: 'Bạn bè', filterable: true },
@@ -78,6 +88,8 @@ const DataDisplay: React.FC<DataDisplayProps> = ({ aggregatedData }) => {
       )
     }
   ];
+  
+  const userColumns = [...baseUserColumns, ...additionalColumns];
   
   const UserItem = React.memo(({ user }: { user: AggregatedUserData }) => (
     <div 

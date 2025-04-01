@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,13 +7,14 @@ import DataDisplay from './DataDisplay';
 import { UploadedFile, AggregatedUserData } from '@/types';
 import { aggregateDataByUID } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
-import { Database, Upload, History, Users, FileText, Eye } from 'lucide-react';
+import { Database, Upload, History, Users, FileText, Eye, Brain } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { DataTable } from '@/components/ui/data-table';
 import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import DataDialog from './DataDialog';
+import AIAnalysis from './AIAnalysis';
 
 const Dashboard: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -23,11 +23,12 @@ const Dashboard: React.FC = () => {
   const [selectedFileData, setSelectedFileData] = useState<any[] | null>(null);
   const [isDataDialogOpen, setIsDataDialogOpen] = useState<boolean>(false);
   const [selectedFileName, setSelectedFileName] = useState<string>("");
+  const [selectedUser, setSelectedUser] = useState<AggregatedUserData | null>(null);
+  const [isAIDialogOpen, setIsAIDialogOpen] = useState<boolean>(false);
   const { toast } = useToast();
   const location = useLocation();
   const { user } = useAuth();
 
-  // Set active tab based on location
   useEffect(() => {
     const path = location.pathname;
     if (path === "/upload" || path === "/") {
@@ -42,7 +43,6 @@ const Dashboard: React.FC = () => {
   }, [location]);
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
-    // Add uploader info and unique ID to each file if missing
     const filesWithUploader = files.map(file => ({
       ...file,
       id: file.id || uuidv4(),
@@ -70,12 +70,10 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Get only the files uploaded by the current user if not admin
   const userFiles = user?.role === 'admin' 
     ? uploadedFiles 
     : uploadedFiles.filter(file => file.uploaderId === user?.id);
     
-  // Function to handle viewing file data
   const handleViewData = (file: UploadedFile) => {
     if (file && file.data) {
       setSelectedFileData(file.data);
@@ -89,8 +87,12 @@ const Dashboard: React.FC = () => {
       });
     }
   };
-    
-  // Define columns for the history data table
+
+  const handleAIAnalysis = (userData: AggregatedUserData) => {
+    setSelectedUser(userData);
+    setIsAIDialogOpen(true);
+  };
+
   const historyColumns = [
     { key: 'name', header: 'Tên file', filterable: true },
     { key: 'type', header: 'Loại dữ liệu', filterable: true },
@@ -126,11 +128,27 @@ const Dashboard: React.FC = () => {
     }
   ];
 
+  const userActionColumn = {
+    key: 'aiAnalysis',
+    header: 'Phân tích AI',
+    render: (_: any, row: any) => (
+      <Button 
+        variant="secondary" 
+        size="sm" 
+        className="flex items-center gap-1"
+        onClick={() => handleAIAnalysis(row.userData)}
+      >
+        <Brain className="h-4 w-4" />
+        <span>Phân tích</span>
+      </Button>
+    )
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="md:hidden mb-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="upload" className="flex items-center gap-1">
               <Upload className="h-4 w-4" />
               <span>Tải lên</span>
@@ -142,6 +160,10 @@ const Dashboard: React.FC = () => {
             <TabsTrigger value="users" className="flex items-center gap-1">
               <Users className="h-4 w-4" />
               <span>Người dùng</span>
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="flex items-center gap-1">
+              <Database className="h-4 w-4" />
+              <span>Thống kê</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -178,14 +200,17 @@ const Dashboard: React.FC = () => {
       )}
       
       {activeTab === "users" && (
-        <DataDisplay aggregatedData={aggregatedData} />
+        <DataDisplay 
+          aggregatedData={aggregatedData} 
+          additionalColumns={[userActionColumn]}
+          onAIAnalysis={handleAIAnalysis}
+        />
       )}
       
       {activeTab === "stats" && (
         <Stats aggregatedData={aggregatedData} />
       )}
 
-      {/* Dialog for viewing file data */}
       <DataDialog 
         isOpen={isDataDialogOpen} 
         onClose={() => setIsDataDialogOpen(false)}
@@ -193,6 +218,21 @@ const Dashboard: React.FC = () => {
         description="Chi tiết dữ liệu trong file đã tải lên"
         data={selectedFileData || []}
       />
+      
+      <DataDialog 
+        isOpen={isAIDialogOpen} 
+        onClose={() => setIsAIDialogOpen(false)}
+        title={`Phân tích AI: ${selectedUser?.name || 'Người dùng'}`}
+        description="Phân tích dữ liệu người dùng bằng AI"
+        wide={true}
+      >
+        {selectedUser && (
+          <AIAnalysis 
+            userData={selectedUser} 
+            allUserData={aggregatedData} 
+          />
+        )}
+      </DataDialog>
     </div>
   );
 };
