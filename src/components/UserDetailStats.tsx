@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +52,6 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
     setDialogData(prev => ({ ...prev, isOpen: false }));
   };
 
-  // Memoize data to prevent unnecessary recalculations
   const postsData = useMemo(() => userData.data.posts?.filter(post => post.post_type === 'wall') || [], [userData.data.posts]);
   const commentsData = useMemo(() => userData.data.comments?.filter(comment => comment.comment_type === 'wall') || [], [userData.data.comments]);
   const groupPostsData = useMemo(() => userData.data.posts?.filter(post => post.post_type === 'group') || [], [userData.data.posts]);
@@ -65,7 +63,6 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
   const eventsData = useMemo(() => userData.data.events || [], [userData.data.events]);
   const interactionsData = useMemo(() => userData.data.interactions || [], [userData.data.interactions]);
 
-  // Prepare timeline data - memoized to prevent recalculation
   const prepareTimelineData = (data: any[], dateField: string) => {
     const counts = {};
     
@@ -85,7 +82,6 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
     })).sort((a, b) => a.date.localeCompare(b.date));
   };
 
-  // Memoize timeline data
   const postsTimeline = useMemo(() => prepareTimelineData(postsData, 'posted_at'), [postsData]);
   const wallPostsTimeline = postsTimeline;
   const groupPostsTimeline = useMemo(() => prepareTimelineData(groupPostsData, 'posted_at'), [groupPostsData]);
@@ -93,7 +89,6 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
   const groupCommentsTimeline = useMemo(() => prepareTimelineData(groupCommentsData, 'commented_at'), [groupCommentsData]);
   const pageCommentsTimeline = useMemo(() => prepareTimelineData(pageCommentsData, 'commented_at'), [pageCommentsData]);
 
-  // Memoized StatCard component for better performance - now with proper type definition
   const StatCard = React.memo<StatCardProps>(({ title, value, icon, data = [], description = '' }) => (
     <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleStatClick(title, data, description)}>
       <CardContent className="p-6 flex items-center justify-between">
@@ -108,7 +103,6 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
     </Card>
   ));
 
-  // Calculate counts of different data types
   const wallPostsCount = postsData.length;
   const wallCommentsCount = commentsData.length;
   const groupPostsCount = groupPostsData.length;
@@ -120,7 +114,6 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
   const groupsCount = userData.groupsCount;
   const interactionsCount = interactionsData.length;
 
-  // Decrease the amount of work in the render function
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -196,18 +189,83 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
           </div>
         </TabsContent>
         
-        {/* Only render the active tab content to improve performance */}
-        {activeTab === "posts" && (
-          <TabsContent value="posts" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bài đăng trên tường theo thời gian</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
+        <TabsContent value="posts" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bài đăng trên tường theo thời gian</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={wallPostsTimeline}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="date" 
+                      angle={-45} 
+                      textAnchor="end"
+                      height={70}
+                      tick={{ fontSize: 12 }}
+                      interval={wallPostsTimeline.length > 10 ? Math.ceil(wallPostsTimeline.length / 10) : 0}
+                    />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="count" name="Số bài đăng" stroke="#8884d8" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Bài đăng trên nhóm theo thời gian</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                {groupPostsTimeline.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={wallPostsTimeline}
+                      data={groupPostsTimeline}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="date" 
+                        angle={-45} 
+                        textAnchor="end"
+                        height={70}
+                      />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="count" name="Số bài đăng nhóm" stroke="#82ca9d" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Không có dữ liệu bài đăng nhóm
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activities" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Bình luận trên tường theo thời gian</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                {commentsTimeline.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={commentsTimeline}
                       margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -217,153 +275,83 @@ const UserDetailStats: React.FC<UserDetailStatsProps> = ({ userData }) => {
                         textAnchor="end"
                         height={70}
                         tick={{ fontSize: 12 }}
-                        interval={wallPostsTimeline.length > 10 ? Math.ceil(wallPostsTimeline.length / 10) : 0}
+                        interval={commentsTimeline.length > 10 ? Math.ceil(commentsTimeline.length / 10) : 0}
                       />
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="count" name="Số bài đăng" stroke="#8884d8" />
+                      <Line type="monotone" dataKey="count" name="Số bình luận" stroke="#8884d8" />
                     </LineChart>
                   </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Không có dữ liệu bình luận
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Bài đăng trên nhóm theo thời gian</CardTitle>
+                <CardTitle>Bình luận trên nhóm</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  {groupPostsTimeline.length > 0 ? (
+                <div className="h-[250px]">
+                  {groupCommentsTimeline.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart
-                        data={groupPostsTimeline}
+                        data={groupCommentsTimeline}
                         margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="date" 
-                          angle={-45} 
-                          textAnchor="end"
-                          height={70}
-                        />
+                        <XAxis dataKey="date" angle={-45} textAnchor="end" height={70} />
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Line type="monotone" dataKey="count" name="Số bài đăng nhóm" stroke="#82ca9d" />
+                        <Line type="monotone" dataKey="count" name="Bình luận nhóm" stroke="#82ca9d" />
                       </LineChart>
                     </ResponsiveContainer>
                   ) : (
                     <div className="flex items-center justify-center h-full text-gray-500">
-                      Không có dữ liệu bài đăng nhóm
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        {activeTab === "activities" && (
-          <TabsContent value="activities" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bình luận trên tường theo thời gian</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  {commentsTimeline.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={commentsTimeline}
-                        margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="date" 
-                          angle={-45} 
-                          textAnchor="end"
-                          height={70}
-                          tick={{ fontSize: 12 }}
-                          interval={commentsTimeline.length > 10 ? Math.ceil(commentsTimeline.length / 10) : 0}
-                        />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="count" name="Số bình luận" stroke="#8884d8" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                      Không có dữ liệu bình luận
+                      Không có dữ liệu bình luận nhóm
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Bình luận trên nhóm</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[250px]">
-                    {groupCommentsTimeline.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={groupCommentsTimeline}
-                          margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" angle={-45} textAnchor="end" height={70} />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line type="monotone" dataKey="count" name="Bình luận nhóm" stroke="#82ca9d" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-500">
-                        Không có dữ liệu bình luận nhóm
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Bình luận trên trang</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[250px]">
-                    {pageCommentsTimeline.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={pageCommentsTimeline}
-                          margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" angle={-45} textAnchor="end" height={70} />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line type="monotone" dataKey="count" name="Bình luận trang" stroke="#ffc658" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-gray-500">
-                        Không có dữ liệu bình luận trang
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        )}
+            <Card>
+              <CardHeader>
+                <CardTitle>Bình luận trên trang</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[250px]">
+                  {pageCommentsTimeline.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={pageCommentsTimeline}
+                        margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" angle={-45} textAnchor="end" height={70} />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="count" name="Bình luận trang" stroke="#ffc658" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-gray-500">
+                      Không có dữ liệu bình luận trang
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
       
       <DataDialog

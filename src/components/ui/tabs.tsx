@@ -1,8 +1,11 @@
+
 import * as React from "react"
 import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
 
+// Export the Tabs component with its value and onValueChange props
+// This is crucial for the context to be properly passed down
 const Tabs = TabsPrimitive.Root
 
 const TabsList = React.forwardRef<

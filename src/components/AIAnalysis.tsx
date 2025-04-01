@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -45,7 +44,6 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ userData, allUserData = [] }) =
     setError(null);
     
     try {
-      // Find user's connections with other users
       const relevantData = [userData, ...allUserData.filter(u => u.uid !== userData.uid)];
       const { insights } = await findConnections(relevantData);
       setNetworkInsights(insights);
@@ -57,7 +55,6 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ userData, allUserData = [] }) =
     }
   };
   
-  // Format analysis text with markdown-like styling
   const formatAnalysisText = (text: string) => {
     if (!text) return [];
     
@@ -95,84 +92,84 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ userData, allUserData = [] }) =
             <TabsTrigger value="basic">Cơ bản</TabsTrigger>
             <TabsTrigger value="network">Mạng lưới</TabsTrigger>
           </TabsList>
+        
+          <TabsContent value="basic" className="space-y-4">
+            {!analysis && !isLoading && !error && (
+              <div className="bg-muted/30 border rounded-lg p-6 text-center">
+                <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-lg font-medium mb-2">Phân tích dữ liệu người dùng</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  AI sẽ phân tích dữ liệu người dùng để cung cấp thông tin chi tiết về UID này.
+                </p>
+                <Button onClick={runAnalysis} className="mx-auto">
+                  Bắt đầu phân tích
+                </Button>
+              </div>
+            )}
+            
+            {isLoading && (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-8 w-2/4 mt-6" />
+                <Skeleton className="h-4 w-5/6" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+            )}
+            
+            {error && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Lỗi</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            {analysis && !isLoading && (
+              <div className="bg-white border rounded-lg p-6">
+                {formatAnalysisText(analysis)}
+                <Button onClick={runAnalysis} className="mt-4" variant="outline">
+                  Phân tích lại
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="network" className="space-y-4">
+            {!networkInsights && !isLoading && (
+              <div className="bg-muted/30 border rounded-lg p-6 text-center">
+                <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <h3 className="text-lg font-medium mb-2">Phân tích mạng lưới</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Hiểu mối quan hệ và kết nối giữa người dùng này với những người dùng khác.
+                </p>
+                <Button onClick={runNetworkAnalysis} className="mx-auto">
+                  Phân tích mạng lưới
+                </Button>
+              </div>
+            )}
+            
+            {isLoading && (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-20 w-full rounded-lg" />
+              </div>
+            )}
+            
+            {networkInsights && !isLoading && (
+              <div className="bg-white border rounded-lg p-6">
+                <h3 className="font-medium text-lg mb-3">Kết quả phân tích mạng lưới</h3>
+                <p>{networkInsights}</p>
+                <Button onClick={runNetworkAnalysis} className="mt-4" variant="outline">
+                  Phân tích lại
+                </Button>
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
-      
-      <TabsContent value="basic" className="space-y-4">
-        {!analysis && !isLoading && !error && (
-          <div className="bg-muted/30 border rounded-lg p-6 text-center">
-            <Brain className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-lg font-medium mb-2">Phân tích dữ liệu người dùng</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              AI sẽ phân tích dữ liệu người dùng để cung cấp thông tin chi tiết về UID này.
-            </p>
-            <Button onClick={runAnalysis} className="mx-auto">
-              Bắt đầu phân tích
-            </Button>
-          </div>
-        )}
-        
-        {isLoading && (
-          <div className="space-y-3">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-8 w-2/4 mt-6" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-4 w-full" />
-          </div>
-        )}
-        
-        {error && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Lỗi</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        {analysis && !isLoading && (
-          <div className="bg-white border rounded-lg p-6">
-            {formatAnalysisText(analysis)}
-            <Button onClick={runAnalysis} className="mt-4" variant="outline">
-              Phân tích lại
-            </Button>
-          </div>
-        )}
-      </TabsContent>
-      
-      <TabsContent value="network" className="space-y-4">
-        {!networkInsights && !isLoading && (
-          <div className="bg-muted/30 border rounded-lg p-6 text-center">
-            <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <h3 className="text-lg font-medium mb-2">Phân tích mạng lưới</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Hiểu mối quan hệ và kết nối giữa người dùng này với những người dùng khác.
-            </p>
-            <Button onClick={runNetworkAnalysis} className="mx-auto">
-              Phân tích mạng lưới
-            </Button>
-          </div>
-        )}
-        
-        {isLoading && (
-          <div className="space-y-3">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-20 w-full rounded-lg" />
-          </div>
-        )}
-        
-        {networkInsights && !isLoading && (
-          <div className="bg-white border rounded-lg p-6">
-            <h3 className="font-medium text-lg mb-3">Kết quả phân tích mạng lưới</h3>
-            <p>{networkInsights}</p>
-            <Button onClick={runNetworkAnalysis} className="mt-4" variant="outline">
-              Phân tích lại
-            </Button>
-          </div>
-        )}
-      </TabsContent>
     </div>
   );
 };

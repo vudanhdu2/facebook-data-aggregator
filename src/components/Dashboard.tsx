@@ -169,6 +169,58 @@ const Dashboard: React.FC = () => {
         </Tabs>
       </div>
       
+      <Tabs value={activeTab} className="hidden">
+        <TabsContent value="upload">
+          {activeTab === "upload" && (
+            <div className="max-w-3xl mx-auto">
+              <div className="mb-6 text-center">
+                <h2 className="text-2xl font-bold mb-2">Tải lên và phân tích dữ liệu Facebook</h2>
+                <p className="text-gray-500">Tải lên các file Excel chứa dữ liệu Facebook để phân tích và tổng hợp thông tin.</p>
+              </div>
+              <FileUpload onFilesUploaded={handleFilesUploaded} />
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="history">
+          {activeTab === "history" && (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 text-center">Lịch sử tải lên</h2>
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                {userFiles.length > 0 ? (
+                  <DataTable 
+                    data={userFiles}
+                    columns={historyColumns}
+                    filterableColumns={['name', 'type', 'uploaderName', 'rowCount', 'uploadDate']}
+                  />
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>Chưa có lịch sử tải lên nào</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="users">
+          {activeTab === "users" && (
+            <DataDisplay 
+              aggregatedData={aggregatedData} 
+              additionalColumns={[userActionColumn]}
+              onAIAnalysis={handleAIAnalysis}
+            />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="stats">
+          {activeTab === "stats" && (
+            <Stats aggregatedData={aggregatedData} />
+          )}
+        </TabsContent>
+      </Tabs>
+      
       {activeTab === "upload" && (
         <div className="max-w-3xl mx-auto">
           <div className="mb-6 text-center">
