@@ -65,6 +65,18 @@ const DataDisplay: React.FC<DataDisplayProps> = ({ aggregatedData }) => {
     { key: 'commentsCount', header: 'Bình luận', filterable: true },
     { key: 'lastActive', header: 'Hoạt động cuối', filterable: true },
     { key: 'sourcesCount', header: 'Nguồn dữ liệu', filterable: true },
+    { 
+      key: 'actions', 
+      header: 'Hành động', 
+      render: (_, row) => (
+        <Badge 
+          className="cursor-pointer hover:bg-primary" 
+          onClick={() => handleUserSelect(row.userData)}
+        >
+          Xem chi tiết
+        </Badge>
+      )
+    }
   ];
   
   const UserItem = React.memo(({ user }: { user: AggregatedUserData }) => (
@@ -114,7 +126,7 @@ const DataDisplay: React.FC<DataDisplayProps> = ({ aggregatedData }) => {
             <DataTable 
               data={tableData}
               columns={userColumns}
-              filterableColumns={['name', 'uid', 'friendsCount', 'groupsCount', 'postsCount', 'commentsCount']}
+              filterableColumns={['name', 'uid', 'friendsCount', 'groupsCount', 'postsCount', 'commentsCount', 'lastActive', 'sourcesCount']}
               className="bg-white"
             />
           </div>

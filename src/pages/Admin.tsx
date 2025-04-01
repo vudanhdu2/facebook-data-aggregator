@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,7 +28,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
   const totalMembers = mockMemberUsers.length;
   const recentActivityCount = totalFiles; // In a real app, this would be actual activity count
 
-  // Table column definitions
+  // Table column definitions with enhanced filter options
   const userColumns = [
     { key: 'name', header: 'Tên', filterable: true },
     { key: 'email', header: 'Email', filterable: true },
@@ -37,6 +36,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
       key: 'role', 
       header: 'Vai trò', 
       filterable: true,
+      filterOptions: ['ADMIN', 'MEMBER'],
       render: (value: UserRole) => (
         <Badge variant={value === UserRole.ADMIN ? "default" : "secondary"}>
           {value === UserRole.ADMIN ? 'Quản trị viên' : 'Thành viên'}
@@ -49,7 +49,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
 
   const fileColumns = [
     { key: 'name', header: 'Tên file', filterable: true },
-    { key: 'type', header: 'Loại', filterable: true },
+    { key: 'type', header: 'Loại', filterable: true, filterOptions: ['application/json', 'text/csv', 'application/zip'] },
     { key: 'uploaderName', header: 'Người tải lên', filterable: true },
     { 
       key: 'uploadDate', 
@@ -57,6 +57,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
       filterable: true,
       render: (value: Date) => new Date(value).toLocaleDateString()
     },
+    { key: 'size', header: 'Kích thước', filterable: true, render: (value: number) => `${(value / 1024).toFixed(2)} KB` }
   ];
 
   return (
@@ -131,7 +132,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
                   <DataTable 
                     data={mockMemberUsers} 
                     columns={userColumns}
-                    filterableColumns={['name', 'email', 'role']}
+                    filterableColumns={['name', 'email', 'role', 'filesUploaded', 'lastActive']}
                   />
                 </CardContent>
               </Card>
@@ -147,7 +148,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
                     <DataTable 
                       data={uploadedFiles} 
                       columns={fileColumns}
-                      filterableColumns={['name', 'type', 'uploaderName']}
+                      filterableColumns={['name', 'type', 'uploaderName', 'uploadDate', 'size']}
                     />
                   ) : (
                     <p className="text-center py-4">Chưa có files nào được tải lên</p>
