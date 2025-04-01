@@ -11,6 +11,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Database, Upload, History, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
+import { DataTable } from '@/components/ui/data-table';
+import { formatDate } from '@/lib/utils';
 
 const Dashboard: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -67,6 +69,27 @@ const Dashboard: React.FC = () => {
   const userFiles = user?.role === 'admin' 
     ? uploadedFiles 
     : uploadedFiles.filter(file => file.uploaderId === user?.id);
+    
+  // Define columns for the history data table
+  const historyColumns = [
+    { key: 'name', header: 'Tên file', filterable: true },
+    { key: 'type', header: 'Loại dữ liệu', filterable: true },
+    { key: 'uploaderName', header: 'Người tải lên', filterable: true },
+    { key: 'rowCount', header: 'Số lượng dòng', filterable: true },
+    { 
+      key: 'uploadDate', 
+      header: 'Ngày giờ tải lên', 
+      filterable: true,
+      render: (value: Date) => formatDate(value)
+    },
+    { 
+      key: 'size', 
+      header: 'Kích thước', 
+      filterable: true, 
+      render: (value: number, row: any) => 
+        row.size ? `${(row.size / 1024).toFixed(2)} KB` : 'N/A'
+    }
+  ];
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -104,24 +127,11 @@ const Dashboard: React.FC = () => {
           <h2 className="text-2xl font-bold mb-6 text-center">Lịch sử tải lên</h2>
           <div className="bg-white p-6 rounded-lg shadow-sm">
             {userFiles.length > 0 ? (
-              <div className="space-y-4">
-                {userFiles.map((file, index) => (
-                  <div key={index} className="p-4 border rounded-md flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{file.name}</p>
-                      <p className="text-sm text-gray-500">{file.rowCount} dòng dữ liệu</p>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                        {file.type}
-                      </span>
-                      <span className="text-xs text-gray-500 mt-1">
-                        {file.uploadDate.toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DataTable 
+                data={userFiles}
+                columns={historyColumns}
+                filterableColumns={['name', 'type', 'uploaderName', 'rowCount', 'uploadDate']}
+              />
             ) : (
               <div className="text-center py-12 text-gray-500">
                 <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
