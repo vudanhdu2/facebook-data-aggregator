@@ -7,6 +7,8 @@ import Header from '@/components/Header';
 import SidebarNav from '@/components/SidebarNav';
 import { User, Users, FileArchive, Activity } from 'lucide-react';
 import { UserRole, UploadedFile } from '@/types';
+import { DataTable } from '@/components/ui/data-table';
+import { Badge } from '@/components/ui/badge';
 
 interface AdminDashboardProps {
   uploadedFiles?: UploadedFile[];
@@ -18,13 +20,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
 
   // Mock user data - in a real app would come from database
   const mockMemberUsers = [
-    { id: '2', name: 'Member User', email: 'member@example.com', role: UserRole.MEMBER, filesUploaded: 3 },
-    { id: '3', name: 'Another Member', email: 'another@example.com', role: UserRole.MEMBER, filesUploaded: 1 },
+    { id: '2', name: 'Member User', email: 'member@example.com', role: UserRole.MEMBER, filesUploaded: 3, lastActive: '2023-12-01' },
+    { id: '3', name: 'Another Member', email: 'another@example.com', role: UserRole.MEMBER, filesUploaded: 1, lastActive: '2023-11-15' },
+    { id: '4', name: 'New User', email: 'new@example.com', role: UserRole.MEMBER, filesUploaded: 0, lastActive: '2023-12-10' },
   ];
 
   const totalFiles = uploadedFiles.length;
   const totalMembers = mockMemberUsers.length;
   const recentActivityCount = totalFiles; // In a real app, this would be actual activity count
+
+  // Table column definitions
+  const userColumns = [
+    { key: 'name', header: 'Tên', filterable: true },
+    { key: 'email', header: 'Email', filterable: true },
+    { 
+      key: 'role', 
+      header: 'Vai trò', 
+      filterable: true,
+      render: (value: UserRole) => (
+        <Badge variant={value === UserRole.ADMIN ? "default" : "secondary"}>
+          {value === UserRole.ADMIN ? 'Quản trị viên' : 'Thành viên'}
+        </Badge>
+      )
+    },
+    { key: 'filesUploaded', header: 'Files đã tải', filterable: true },
+    { key: 'lastActive', header: 'Hoạt động cuối', filterable: true },
+  ];
+
+  const fileColumns = [
+    { key: 'name', header: 'Tên file', filterable: true },
+    { key: 'type', header: 'Loại', filterable: true },
+    { key: 'uploaderName', header: 'Người tải lên', filterable: true },
+    { 
+      key: 'uploadDate', 
+      header: 'Ngày tải lên', 
+      filterable: true,
+      render: (value: Date) => new Date(value).toLocaleDateString()
+    },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -95,32 +128,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
                   <CardTitle>Quản lý người dùng</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Files đã tải</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {mockMemberUsers.map((member) => (
-                          <tr key={member.id}>
-                            <td className="px-6 py-4 whitespace-nowrap">{member.name}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{member.email}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                Thành viên
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-center">{member.filesUploaded}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <DataTable 
+                    data={mockMemberUsers} 
+                    columns={userColumns}
+                    filterableColumns={['name', 'email', 'role']}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -132,30 +144,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
                 </CardHeader>
                 <CardContent>
                   {uploadedFiles.length > 0 ? (
-                    <div className="rounded-md border">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên file</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người tải lên</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tải lên</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {uploadedFiles.map((file, index) => (
-                            <tr key={file.id || index}>
-                              <td className="px-6 py-4 whitespace-nowrap">{file.name}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{file.type}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{file.uploaderName || 'Unknown'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                {new Date(file.uploadDate).toLocaleDateString()}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    <DataTable 
+                      data={uploadedFiles} 
+                      columns={fileColumns}
+                      filterableColumns={['name', 'type', 'uploaderName']}
+                    />
                   ) : (
                     <p className="text-center py-4">Chưa có files nào được tải lên</p>
                   )}
