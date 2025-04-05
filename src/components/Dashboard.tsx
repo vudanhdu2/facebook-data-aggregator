@@ -1,13 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Stats from './Stats';
 import FileUpload from './FileUpload';
 import DataDisplay from './DataDisplay';
-import { UploadedFile, AggregatedUserData } from '@/types';
+import { UploadedFile, AggregatedUserData, DataSourceType } from '@/types';
 import { aggregateDataByUID } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
-import { Database, Upload, History, Users, FileText, Eye, Brain } from 'lucide-react';
+import { Database, Upload, History, Users, FileText, Eye, Brain, User, Folder } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { DataTable } from '@/components/ui/data-table';
@@ -20,6 +21,7 @@ const Dashboard: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [aggregatedData, setAggregatedData] = useState<AggregatedUserData[]>([]);
   const [activeTab, setActiveTab] = useState<string>("upload");
+  const [userDataType, setUserDataType] = useState<'all' | 'profile' | 'group' | 'page'>('all');
   const [selectedFileData, setSelectedFileData] = useState<any[] | null>(null);
   const [isDataDialogOpen, setIsDataDialogOpen] = useState<boolean>(false);
   const [selectedFileName, setSelectedFileName] = useState<string>("");
@@ -27,6 +29,7 @@ const Dashboard: React.FC = () => {
   const [isAIDialogOpen, setIsAIDialogOpen] = useState<boolean>(false);
   const { toast } = useToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   useEffect(() => {
@@ -35,8 +38,18 @@ const Dashboard: React.FC = () => {
       setActiveTab("upload");
     } else if (path === "/history") {
       setActiveTab("history");
-    } else if (path === "/users") {
+    } else if (path.includes("/users")) {
       setActiveTab("users");
+      
+      if (path === "/users/profile") {
+        setUserDataType('profile');
+      } else if (path === "/users/group") {
+        setUserDataType('group');
+      } else if (path === "/users/page") {
+        setUserDataType('page');
+      } else {
+        setUserDataType('all');
+      }
     } else if (path === "/stats") {
       setActiveTab("stats");
     }
@@ -93,6 +106,24 @@ const Dashboard: React.FC = () => {
     setIsAIDialogOpen(true);
   };
 
+  const filteredAggregatedData = useMemo(() => {
+    if (userDataType === 'all') return aggregatedData;
+    
+    return aggregatedData.filter(user => {
+      const hasProfileData = user.sources.some(source => 
+        source.sourceType === DataSourceType.UID_PROFILE);
+      const hasGroupData = user.sources.some(source => 
+        source.sourceType === DataSourceType.GROUP);
+      const hasPageData = user.sources.some(source => 
+        source.sourceType === DataSourceType.PAGE);
+      
+      if (userDataType === 'profile') return hasProfileData;
+      if (userDataType === 'group') return hasGroupData;
+      if (userDataType === 'page') return hasPageData;
+      return true;
+    });
+  }, [aggregatedData, userDataType]);
+
   const historyColumns = [
     { key: 'name', header: 'Tên file', filterable: true },
     { key: 'type', header: 'Loại dữ liệu', filterable: true },
@@ -144,10 +175,42 @@ const Dashboard: React.FC = () => {
     )
   };
 
+  const getUsersTabTitle = () => {
+    switch(userDataType) {
+      case 'profile':
+        return "UID PROFILE";
+      case 'group':
+        return "UID GROUP";
+      case 'page':
+        return "UID PAGE";
+      default:
+        return "Dữ liệu người dùng";
+    }
+  };
+
+  const getUsersTabIcon = () => {
+    switch(userDataType) {
+      case 'profile':
+        return <User className="h-4 w-4 mr-1" />;
+      case 'group':
+        return <Folder className="h-4 w-4 mr-1" />;
+      case 'page':
+        return <FileText className="h-4 w-4 mr-1" />;
+      default:
+        return <Users className="h-4 w-4 mr-1" />;
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="md:hidden mb-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => {
+          setActiveTab(value);
+          if (value === 'upload') navigate('/upload');
+          else if (value === 'history') navigate('/history');
+          else if (value === 'users') navigate('/users');
+          else if (value === 'stats') navigate('/stats');
+        }} className="w-full">
           <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="upload" className="flex items-center gap-1">
               <Upload className="h-4 w-4" />
@@ -158,8 +221,8 @@ const Dashboard: React.FC = () => {
               <span>Lịch sử</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              <span>Người dùng</span>
+              {getUsersTabIcon()}
+              <span>{getUsersTabTitle()}</span>
             </TabsTrigger>
             <TabsTrigger value="stats" className="flex items-center gap-1">
               <Database className="h-4 w-4" />
@@ -169,57 +232,73 @@ const Dashboard: React.FC = () => {
         </Tabs>
       </div>
       
-      <Tabs value={activeTab} className="hidden">
-        <TabsContent value="upload">
-          {activeTab === "upload" && (
-            <div className="max-w-3xl mx-auto">
-              <div className="mb-6 text-center">
-                <h2 className="text-2xl font-bold mb-2">Tải lên và phân tích dữ liệu Facebook</h2>
-                <p className="text-gray-500">Tải lên các file Excel chứa dữ liệu Facebook để phân tích và tổng hợp thông tin.</p>
-              </div>
-              <FileUpload onFilesUploaded={handleFilesUploaded} />
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="history">
-          {activeTab === "history" && (
-            <div>
-              <h2 className="text-2xl font-bold mb-6 text-center">Lịch sử tải lên</h2>
-              <div className="bg-white p-6 rounded-lg shadow-sm">
-                {userFiles.length > 0 ? (
-                  <DataTable 
-                    data={userFiles}
-                    columns={historyColumns}
-                    filterableColumns={['name', 'type', 'uploaderName', 'rowCount', 'uploadDate']}
-                  />
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>Chưa có lịch sử tải lên nào</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="users">
-          {activeTab === "users" && (
-            <DataDisplay 
-              aggregatedData={aggregatedData} 
-              additionalColumns={[userActionColumn]}
-              onAIAnalysis={handleAIAnalysis}
-            />
-          )}
-        </TabsContent>
-        
-        <TabsContent value="stats">
-          {activeTab === "stats" && (
-            <Stats aggregatedData={aggregatedData} />
-          )}
-        </TabsContent>
-      </Tabs>
+      {activeTab === "users" && (
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-4 flex items-center">
+            {getUsersTabIcon()}
+            <span className="ml-2">{getUsersTabTitle()}</span>
+          </h2>
+          
+          <Tabs value={userDataType} onValueChange={(value: any) => {
+            setUserDataType(value);
+            if (value === 'all') navigate('/users');
+            else if (value === 'profile') navigate('/users/profile');
+            else if (value === 'group') navigate('/users/group');
+            else if (value === 'page') navigate('/users/page');
+          }}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="all" className="flex items-center">
+                <Users className="h-4 w-4 mr-1" />
+                <span>Tất cả</span>
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="flex items-center">
+                <User className="h-4 w-4 mr-1" />
+                <span>UID PROFILE</span>
+              </TabsTrigger>
+              <TabsTrigger value="group" className="flex items-center">
+                <Folder className="h-4 w-4 mr-1" />
+                <span>UID GROUP</span>
+              </TabsTrigger>
+              <TabsTrigger value="page" className="flex items-center">
+                <FileText className="h-4 w-4 mr-1" />
+                <span>UID PAGE</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="all">
+              <DataDisplay 
+                aggregatedData={filteredAggregatedData} 
+                additionalColumns={[userActionColumn]}
+                onAIAnalysis={handleAIAnalysis}
+              />
+            </TabsContent>
+            
+            <TabsContent value="profile">
+              <DataDisplay 
+                aggregatedData={filteredAggregatedData} 
+                additionalColumns={[userActionColumn]}
+                onAIAnalysis={handleAIAnalysis}
+              />
+            </TabsContent>
+            
+            <TabsContent value="group">
+              <DataDisplay 
+                aggregatedData={filteredAggregatedData} 
+                additionalColumns={[userActionColumn]}
+                onAIAnalysis={handleAIAnalysis}
+              />
+            </TabsContent>
+            
+            <TabsContent value="page">
+              <DataDisplay 
+                aggregatedData={filteredAggregatedData} 
+                additionalColumns={[userActionColumn]}
+                onAIAnalysis={handleAIAnalysis}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
       
       {activeTab === "upload" && (
         <div className="max-w-3xl mx-auto">
@@ -249,14 +328,6 @@ const Dashboard: React.FC = () => {
             )}
           </div>
         </div>
-      )}
-      
-      {activeTab === "users" && (
-        <DataDisplay 
-          aggregatedData={aggregatedData} 
-          additionalColumns={[userActionColumn]}
-          onAIAnalysis={handleAIAnalysis}
-        />
       )}
       
       {activeTab === "stats" && (

@@ -50,6 +50,24 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            <Route path="/users/profile" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/group" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/page" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/stats" element={
               <ProtectedRoute>
                 <Index />
