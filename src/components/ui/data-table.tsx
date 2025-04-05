@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import {
   Table,
@@ -52,6 +51,9 @@ interface DataTableProps<T> {
   columns: DataTableColumn[];
   filterableColumns?: string[];
   className?: string;
+  expandableContent?: (row: T) => React.ReactNode;
+  onRowClick?: (row: T) => void;
+  expandedRowId?: string | null;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -59,16 +61,17 @@ export function DataTable<T extends Record<string, any>>({
   columns,
   filterableColumns = [],
   className,
+  expandableContent,
+  onRowClick,
+  expandedRowId,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [activeFilterColumn, setActiveFilterColumn] = useState<string | null>(null);
   const [filterConditions, setFilterConditions] = useState<FilterCondition[]>([]);
 
-  // Process filter conditions
   const filteredData = useMemo(() => {
     return data.filter(row => {
-      // First apply simple filters
       for (const [key, value] of Object.entries(filters)) {
         if (!value) continue;
         
@@ -78,7 +81,6 @@ export function DataTable<T extends Record<string, any>>({
         }
       }
       
-      // Then apply advanced filter conditions
       for (const condition of filterConditions) {
         const cellValue = String(row[condition.column] || '');
         const filterValue = condition.value;
@@ -113,7 +115,6 @@ export function DataTable<T extends Record<string, any>>({
         }
       }
       
-      // Apply global search if provided
       if (searchQuery) {
         const searchFields = columns.filter(col => col.filterable || filterableColumns.includes(col.key)).map(col => col.key);
         return searchFields.some(field => 
@@ -172,14 +173,12 @@ export function DataTable<T extends Record<string, any>>({
     }
   };
 
-  // Determine if the column is numeric by checking first non-empty value
   const isNumericColumn = (columnKey: string) => {
     const sample = data.find(row => row[columnKey] !== undefined && row[columnKey] !== null);
     if (!sample) return false;
     return !isNaN(Number(sample[columnKey]));
   };
 
-  // Get unique values for a column (for dropdown filters)
   const getUniqueValues = (columnKey: string) => {
     const uniqueValues = new Set<string>();
     data.forEach(row => {
@@ -190,13 +189,11 @@ export function DataTable<T extends Record<string, any>>({
     return Array.from(uniqueValues).sort();
   };
 
-  // Helper to render operator dropdown for advanced filters
   const renderOperatorDropdown = (columnKey: string) => {
     const isNumeric = isNumericColumn(columnKey);
     
     return (
       <Select onValueChange={(value) => {
-        // Create an empty condition that will be filled in with value later
         addFilterCondition(columnKey, '', value as FilterCondition["operator"]);
       }}>
         <SelectTrigger className="w-[160px]">
@@ -220,7 +217,6 @@ export function DataTable<T extends Record<string, any>>({
 
   return (
     <div className="space-y-4">
-      {/* Global search and filter controls */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -275,7 +271,6 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       </div>
       
-      {/* Active column for advanced filtering */}
       {activeFilterColumn && (
         <div className="p-4 border rounded-md bg-muted/30">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -290,7 +285,6 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       )}
       
-      {/* Active filters display */}
       {(Object.keys(filters).length > 0 || filterConditions.length > 0) && (
         <div className="flex flex-wrap gap-2">
           {Object.entries(filters).map(([key, value]) => {
@@ -317,7 +311,6 @@ export function DataTable<T extends Record<string, any>>({
           {filterConditions.map((condition, index) => {
             const column = columns.find(col => col.key === condition.column);
             
-            // Translate operator for display
             let operatorText = "";
             switch(condition.operator) {
               case "contains": operatorText = "chứa"; break;
@@ -345,7 +338,6 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Advanced filter condition input for selected column */}
       {filterConditions.length > 0 && filterConditions.some(c => c.value === '') && (
         <div className="p-4 border rounded-md bg-muted/30">
           {filterConditions
@@ -363,7 +355,6 @@ export function DataTable<T extends Record<string, any>>({
                 );
               };
               
-              // Check if column has predefined filter options
               const columnDef = columns.find(col => col.key === condition.column);
               const hasFilterOptions = columnDef?.filterOptions && columnDef.filterOptions.length > 0;
               
@@ -421,7 +412,6 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Table */}
       <div className="rounded-md border">
         <Table className={className}>
           <TableHeader>
@@ -477,16 +467,30 @@ export function DataTable<T extends Record<string, any>>({
           <TableBody>
             {filteredData.length > 0 ? (
               filteredData.map((row, idx) => (
-                <TableRow key={idx}>
-                  {columns.map((column) => (
-                    <TableCell key={column.key}>
-                      {column.render 
-                        ? column.render(row[column.key], row)
-                        : row[column.key]
-                      }
-                    </TableCell>
-                  ))}
-                </TableRow>
+                <React.Fragment key={idx}>
+                  <TableRow 
+                    onClick={() => onRowClick && onRowClick(row)}
+                    className={onRowClick ? "cursor-pointer" : ""}
+                  >
+                    {columns.map((column) => (
+                      <TableCell key={column.key}>
+                        {column.render 
+                          ? column.render(row[column.key], row)
+                          : row[column.key]
+                        }
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {expandableContent && expandedRowId === row.id && (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="p-0 border-t-0">
+                        <div className="px-4 py-2 bg-muted/20">
+                          {expandableContent(row)}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </React.Fragment>
               ))
             ) : (
               <TableRow>
