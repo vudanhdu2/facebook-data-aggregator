@@ -95,6 +95,13 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
   };
 
   const handleGoToUserPage = (userData: AggregatedUserData) => {
+    // Add a toast notification to indicate navigation
+    toast({
+      title: "Đang chuyển hướng",
+      description: `Đến trang chi tiết của ${userData.name || userData.uid}`,
+    });
+    
+    // Navigate to the user detail page
     navigate(`/users/${userData.uid}`);
   };
 
