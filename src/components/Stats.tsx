@@ -19,11 +19,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface StatsProps {
   aggregatedData: AggregatedUserData[];
+  condensed?: boolean;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-const Stats: React.FC<StatsProps> = ({ aggregatedData }) => {
+const Stats: React.FC<StatsProps> = ({ aggregatedData, condensed = false }) => {
   if (!aggregatedData || aggregatedData.length === 0) {
     return <div className="text-center py-8 text-gray-500">Chưa có dữ liệu để hiển thị thống kê</div>;
   }
@@ -70,18 +71,56 @@ const Stats: React.FC<StatsProps> = ({ aggregatedData }) => {
     }));
   
   const StatCard = ({ title, value, icon }) => (
-    <Card className="stats-card">
-      <CardHeader className="p-4 pb-2">
+    <Card className={`stats-card ${condensed ? 'mb-2' : ''}`}>
+      <CardHeader className={condensed ? "p-2 pb-1" : "p-4 pb-2"}>
         <div className="flex justify-between items-center">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
+          <CardTitle className={`${condensed ? 'text-xs' : 'text-sm'} font-medium`}>{title}</CardTitle>
           {icon}
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="text-2xl font-bold">{value.toLocaleString()}</div>
+      <CardContent className={condensed ? "p-2 pt-0" : "p-4 pt-0"}>
+        <div className={`${condensed ? 'text-lg' : 'text-2xl'} font-bold`}>{value.toLocaleString()}</div>
       </CardContent>
     </Card>
   );
+  
+  // If in condensed mode, just show the stat cards
+  if (condensed) {
+    return (
+      <div className="space-y-2">
+        <StatCard 
+          title="Người dùng" 
+          value={stats.totalUsers} 
+          icon={<Users className="h-3 w-3 text-secondary" />}
+        />
+        <StatCard 
+          title="Bạn bè" 
+          value={stats.totalFriends} 
+          icon={<UserCircle className="h-3 w-3 text-secondary" />}
+        />
+        <StatCard 
+          title="Bài đăng" 
+          value={stats.totalPosts} 
+          icon={<Share2 className="h-3 w-3 text-secondary" />}
+        />
+        <StatCard 
+          title="Bình luận" 
+          value={stats.totalComments} 
+          icon={<MessageCircle className="h-3 w-3 text-secondary" />}
+        />
+        <StatCard 
+          title="Trang đã thích" 
+          value={stats.totalPagesLiked} 
+          icon={<ThumbsUp className="h-3 w-3 text-secondary" />}
+        />
+        <StatCard 
+          title="Địa điểm đã check-in" 
+          value={stats.totalCheckIns} 
+          icon={<MapPin className="h-3 w-3 text-secondary" />}
+        />
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">

@@ -16,6 +16,7 @@ import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import DataDialog from './DataDialog';
 import AIAnalysis from './AIAnalysis';
+import UserDetailStats from './UserDetailStats';
 
 const Dashboard: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -265,37 +266,65 @@ const Dashboard: React.FC = () => {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="all">
-              <DataDisplay 
-                aggregatedData={filteredAggregatedData} 
-                additionalColumns={[userActionColumn]}
-                onAIAnalysis={handleAIAnalysis}
-              />
-            </TabsContent>
-            
-            <TabsContent value="profile">
-              <DataDisplay 
-                aggregatedData={filteredAggregatedData} 
-                additionalColumns={[userActionColumn]}
-                onAIAnalysis={handleAIAnalysis}
-              />
-            </TabsContent>
-            
-            <TabsContent value="group">
-              <DataDisplay 
-                aggregatedData={filteredAggregatedData} 
-                additionalColumns={[userActionColumn]}
-                onAIAnalysis={handleAIAnalysis}
-              />
-            </TabsContent>
-            
-            <TabsContent value="page">
-              <DataDisplay 
-                aggregatedData={filteredAggregatedData} 
-                additionalColumns={[userActionColumn]}
-                onAIAnalysis={handleAIAnalysis}
-              />
-            </TabsContent>
+            {userDataType === 'profile' ? (
+              <div className="space-y-6">
+                {selectedUser ? (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-semibold">Chi tiết người dùng: {selectedUser.name || selectedUser.uid}</h3>
+                      <Button variant="outline" onClick={() => setSelectedUser(null)}>
+                        Quay lại danh sách
+                      </Button>
+                    </div>
+                    <UserDetailStats userData={selectedUser} />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="md:col-span-1">
+                      <div className="bg-white p-6 rounded-lg shadow-sm space-y-6">
+                        <h3 className="text-lg font-semibold mb-4">Tổng quan dữ liệu</h3>
+                        <Stats aggregatedData={filteredAggregatedData} condensed={true} />
+                      </div>
+                    </div>
+                    <div className="md:col-span-3">
+                      <DataDisplay 
+                        aggregatedData={filteredAggregatedData} 
+                        additionalColumns={[userActionColumn]}
+                        onAIAnalysis={handleAIAnalysis}
+                        onUserSelect={setSelectedUser}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <TabsContent value="all">
+                  <DataDisplay 
+                    aggregatedData={filteredAggregatedData} 
+                    additionalColumns={[userActionColumn]}
+                    onAIAnalysis={handleAIAnalysis}
+                    onUserSelect={setSelectedUser}
+                  />
+                </TabsContent>
+                <TabsContent value="group">
+                  <DataDisplay 
+                    aggregatedData={filteredAggregatedData} 
+                    additionalColumns={[userActionColumn]}
+                    onAIAnalysis={handleAIAnalysis}
+                    onUserSelect={setSelectedUser}
+                  />
+                </TabsContent>
+                <TabsContent value="page">
+                  <DataDisplay 
+                    aggregatedData={filteredAggregatedData} 
+                    additionalColumns={[userActionColumn]}
+                    onAIAnalysis={handleAIAnalysis}
+                    onUserSelect={setSelectedUser}
+                  />
+                </TabsContent>
+              </>
+            )}
           </Tabs>
         </div>
       )}
