@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -24,7 +25,6 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<AggregatedUserData | null>(null);
-  const [viewMode, setViewMode] = useState<'basic' | 'advanced'>('basic');
   
   const filteredData = useMemo(() => {
     if (!searchQuery) return aggregatedData;
@@ -42,10 +42,6 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
   
   const handleUserSelect = useCallback((user: AggregatedUserData) => {
     setSelectedUser(user);
-  }, []);
-  
-  const handleViewModeChange = useCallback((value: string) => {
-    setViewMode(value as 'basic' | 'advanced');
   }, []);
   
   const tableData = useMemo(() => {
@@ -184,162 +180,156 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
                         </p>
                       )}
                     </div>
-                    <div>
-                      <Tabs value={viewMode} onValueChange={handleViewModeChange}>
-                        <TabsList>
-                          <TabsTrigger value="basic">Cơ bản</TabsTrigger>
-                          <TabsTrigger value="advanced">Nâng cao</TabsTrigger>
-                        </TabsList>
-                      </Tabs>
-                    </div>
                   </div>
                   
-                  {viewMode === 'advanced' ? (
-                    <UserDetailStats userData={selectedUser} />
-                  ) : (
-                    <Tabs defaultValue="summary">
-                      <TabsList className="w-full mb-4">
-                        <TabsTrigger value="summary" className="flex-1">Tổng quan</TabsTrigger>
-                        <TabsTrigger value="friends" className="flex-1">Bạn bè ({selectedUser.friendsCount})</TabsTrigger>
-                        <TabsTrigger value="groups" className="flex-1">Nhóm ({selectedUser.groupsCount})</TabsTrigger>
-                        <TabsTrigger value="activities" className="flex-1">Hoạt động</TabsTrigger>
-                      </TabsList>
-                      
-                      <TabsContent value="summary">
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                          <div className="data-card">
-                            <h3 className="text-sm font-medium text-gray-500">Bạn bè</h3>
-                            <p className="text-2xl font-bold">{selectedUser.friendsCount}</p>
-                          </div>
-                          <div className="data-card">
-                            <h3 className="text-sm font-medium text-gray-500">Nhóm đã tham gia</h3>
-                            <p className="text-2xl font-bold">{selectedUser.groupsCount}</p>
-                          </div>
-                          <div className="data-card">
-                            <h3 className="text-sm font-medium text-gray-500">Bài đăng</h3>
-                            <p className="text-2xl font-bold">{selectedUser.postsCount}</p>
-                          </div>
-                          <div className="data-card">
-                            <h3 className="text-sm font-medium text-gray-500">Bình luận</h3>
-                            <p className="text-2xl font-bold">{selectedUser.commentsCount}</p>
-                          </div>
-                          <div className="data-card">
-                            <h3 className="text-sm font-medium text-gray-500">Trang đã thích</h3>
-                            <p className="text-2xl font-bold">{selectedUser.pagesLikedCount}</p>
-                          </div>
-                          <div className="data-card">
-                            <h3 className="text-sm font-medium text-gray-500">Check-in</h3>
-                            <p className="text-2xl font-bold">{selectedUser.checkInsCount}</p>
-                          </div>
+                  {/* Combined view with all tabs in a single interface */}
+                  <Tabs defaultValue="summary">
+                    <TabsList className="w-full mb-4">
+                      <TabsTrigger value="summary" className="flex-1">Tổng quan</TabsTrigger>
+                      <TabsTrigger value="details" className="flex-1">Chi tiết nâng cao</TabsTrigger>
+                      <TabsTrigger value="friends" className="flex-1">Bạn bè ({selectedUser.friendsCount})</TabsTrigger>
+                      <TabsTrigger value="groups" className="flex-1">Nhóm ({selectedUser.groupsCount})</TabsTrigger>
+                      <TabsTrigger value="activities" className="flex-1">Hoạt động</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="summary">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                        <div className="data-card">
+                          <h3 className="text-sm font-medium text-gray-500">Bạn bè</h3>
+                          <p className="text-2xl font-bold">{selectedUser.friendsCount}</p>
                         </div>
-                      </TabsContent>
-                      
-                      <TabsContent value="friends">
-                        {selectedUser.friendsCount > 0 ? (
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                            {selectedUser.data.friends.map((friend, index) => (
-                              <div key={index} className="p-3 bg-gray-50 rounded-md">
-                                {Object.entries(friend).map(([key, value]) => (
-                                  <div key={key} className="grid grid-cols-2 text-sm">
-                                    <span className="font-medium text-gray-600">{key}:</span>
-                                    <span>{String(value)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">Không có dữ liệu về bạn bè</div>
-                        )}
-                      </TabsContent>
-                      
-                      <TabsContent value="groups">
-                        {selectedUser.groupsCount > 0 ? (
-                          <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                            {selectedUser.data.groups.map((group, index) => (
-                              <div key={index} className="p-3 bg-gray-50 rounded-md">
-                                {Object.entries(group).map(([key, value]) => (
-                                  <div key={key} className="grid grid-cols-2 text-sm">
-                                    <span className="font-medium text-gray-600">{key}:</span>
-                                    <span>{String(value)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">Không có dữ liệu về nhóm</div>
-                        )}
-                      </TabsContent>
-                      
-                      <TabsContent value="activities">
-                        <Tabs defaultValue="posts">
-                          <TabsList className="w-full mb-4 grid grid-cols-3">
-                            <TabsTrigger value="posts">Bài đăng ({selectedUser.postsCount})</TabsTrigger>
-                            <TabsTrigger value="comments">Bình luận ({selectedUser.commentsCount})</TabsTrigger>
-                            <TabsTrigger value="likes">Trang đã thích ({selectedUser.pagesLikedCount})</TabsTrigger>
-                          </TabsList>
-                          
-                          <TabsContent value="posts">
-                            {selectedUser.postsCount > 0 ? (
-                              <div className="space-y-2 max-h-[350px] overflow-y-auto">
-                                {selectedUser.data.posts.map((post, index) => (
-                                  <div key={index} className="p-3 bg-gray-50 rounded-md">
-                                    {Object.entries(post).map(([key, value]) => (
-                                      <div key={key} className="grid grid-cols-2 text-sm">
-                                        <span className="font-medium text-gray-600">{key}:</span>
-                                        <span>{String(value)}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-8 text-gray-500">Không có dữ liệu bài đăng</div>
-                            )}
-                          </TabsContent>
-                          
-                          <TabsContent value="comments">
-                            {selectedUser.commentsCount > 0 ? (
-                              <div className="space-y-2 max-h-[350px] overflow-y-auto">
-                                {selectedUser.data.comments.map((comment, index) => (
-                                  <div key={index} className="p-3 bg-gray-50 rounded-md">
-                                    {Object.entries(comment).map(([key, value]) => (
-                                      <div key={key} className="grid grid-cols-2 text-sm">
-                                        <span className="font-medium text-gray-600">{key}:</span>
-                                        <span>{String(value)}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-8 text-gray-500">Không có dữ liệu bình luận</div>
-                            )}
-                          </TabsContent>
-                          
-                          <TabsContent value="likes">
-                            {selectedUser.pagesLikedCount > 0 ? (
-                              <div className="space-y-2 max-h-[350px] overflow-y-auto">
-                                {selectedUser.data.pagesLiked.map((page, index) => (
-                                  <div key={index} className="p-3 bg-gray-50 rounded-md">
-                                    {Object.entries(page).map(([key, value]) => (
-                                      <div key={key} className="grid grid-cols-2 text-sm">
-                                        <span className="font-medium text-gray-600">{key}:</span>
-                                        <span>{String(value)}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-8 text-gray-500">Không có dữ liệu về trang đã thích</div>
-                            )}
-                          </TabsContent>
-                        </Tabs>
-                      </TabsContent>
-                    </Tabs>
-                  )}
+                        <div className="data-card">
+                          <h3 className="text-sm font-medium text-gray-500">Nhóm đã tham gia</h3>
+                          <p className="text-2xl font-bold">{selectedUser.groupsCount}</p>
+                        </div>
+                        <div className="data-card">
+                          <h3 className="text-sm font-medium text-gray-500">Bài đăng</h3>
+                          <p className="text-2xl font-bold">{selectedUser.postsCount}</p>
+                        </div>
+                        <div className="data-card">
+                          <h3 className="text-sm font-medium text-gray-500">Bình luận</h3>
+                          <p className="text-2xl font-bold">{selectedUser.commentsCount}</p>
+                        </div>
+                        <div className="data-card">
+                          <h3 className="text-sm font-medium text-gray-500">Trang đã thích</h3>
+                          <p className="text-2xl font-bold">{selectedUser.pagesLikedCount}</p>
+                        </div>
+                        <div className="data-card">
+                          <h3 className="text-sm font-medium text-gray-500">Check-in</h3>
+                          <p className="text-2xl font-bold">{selectedUser.checkInsCount}</p>
+                        </div>
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="details">
+                      <UserDetailStats userData={selectedUser} />
+                    </TabsContent>
+                    
+                    <TabsContent value="friends">
+                      {selectedUser.friendsCount > 0 ? (
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          {selectedUser.data.friends.map((friend, index) => (
+                            <div key={index} className="p-3 bg-gray-50 rounded-md">
+                              {Object.entries(friend).map(([key, value]) => (
+                                <div key={key} className="grid grid-cols-2 text-sm">
+                                  <span className="font-medium text-gray-600">{key}:</span>
+                                  <span>{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">Không có dữ liệu về bạn bè</div>
+                      )}
+                    </TabsContent>
+                    
+                    <TabsContent value="groups">
+                      {selectedUser.groupsCount > 0 ? (
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                          {selectedUser.data.groups.map((group, index) => (
+                            <div key={index} className="p-3 bg-gray-50 rounded-md">
+                              {Object.entries(group).map(([key, value]) => (
+                                <div key={key} className="grid grid-cols-2 text-sm">
+                                  <span className="font-medium text-gray-600">{key}:</span>
+                                  <span>{String(value)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-gray-500">Không có dữ liệu về nhóm</div>
+                      )}
+                    </TabsContent>
+                    
+                    <TabsContent value="activities">
+                      <Tabs defaultValue="posts">
+                        <TabsList className="w-full mb-4 grid grid-cols-3">
+                          <TabsTrigger value="posts">Bài đăng ({selectedUser.postsCount})</TabsTrigger>
+                          <TabsTrigger value="comments">Bình luận ({selectedUser.commentsCount})</TabsTrigger>
+                          <TabsTrigger value="likes">Trang đã thích ({selectedUser.pagesLikedCount})</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="posts">
+                          {selectedUser.postsCount > 0 ? (
+                            <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                              {selectedUser.data.posts.map((post, index) => (
+                                <div key={index} className="p-3 bg-gray-50 rounded-md">
+                                  {Object.entries(post).map(([key, value]) => (
+                                    <div key={key} className="grid grid-cols-2 text-sm">
+                                      <span className="font-medium text-gray-600">{key}:</span>
+                                      <span>{String(value)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">Không có dữ liệu bài đăng</div>
+                          )}
+                        </TabsContent>
+                        
+                        <TabsContent value="comments">
+                          {selectedUser.commentsCount > 0 ? (
+                            <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                              {selectedUser.data.comments.map((comment, index) => (
+                                <div key={index} className="p-3 bg-gray-50 rounded-md">
+                                  {Object.entries(comment).map(([key, value]) => (
+                                    <div key={key} className="grid grid-cols-2 text-sm">
+                                      <span className="font-medium text-gray-600">{key}:</span>
+                                      <span>{String(value)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">Không có dữ liệu bình luận</div>
+                          )}
+                        </TabsContent>
+                        
+                        <TabsContent value="likes">
+                          {selectedUser.pagesLikedCount > 0 ? (
+                            <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                              {selectedUser.data.pagesLiked.map((page, index) => (
+                                <div key={index} className="p-3 bg-gray-50 rounded-md">
+                                  {Object.entries(page).map(([key, value]) => (
+                                    <div key={key} className="grid grid-cols-2 text-sm">
+                                      <span className="font-medium text-gray-600">{key}:</span>
+                                      <span>{String(value)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">Không có dữ liệu về trang đã thích</div>
+                          )}
+                        </TabsContent>
+                      </Tabs>
+                    </TabsContent>
+                  </Tabs>
                 </div>
               ) : (
                 <div className="text-center py-16">
