@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import UserDetailsPage from "./pages/UserDetailsPage";
 import { UserRole } from "./types";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,12 @@ const App = () => (
             <Route path="/stats" element={
               <ProtectedRoute>
                 <Index />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/users/:uid" element={
+              <ProtectedRoute>
+                <UserDetailsPage />
               </ProtectedRoute>
             } />
             

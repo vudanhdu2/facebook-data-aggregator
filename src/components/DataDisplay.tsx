@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { AggregatedUserData, DataSourceType, UIDSource } from '@/types';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { Eye, ArrowLeft } from 'lucide-react';
+import { Eye, ArrowLeft, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useNavigate } from 'react-router-dom';
 import UserDetailStats from './UserDetailStats';
 
 interface DataDisplayProps {
@@ -23,8 +24,16 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
   onUserSelect 
 }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AggregatedUserData | null>(null);
+
+  // Store aggregatedData in sessionStorage for access in the details page
+  useEffect(() => {
+    if (aggregatedData && aggregatedData.length > 0) {
+      sessionStorage.setItem('aggregatedUserData', JSON.stringify(aggregatedData));
+    }
+  }, [aggregatedData]);
 
   if (!aggregatedData || aggregatedData.length === 0) {
     return (
@@ -85,6 +94,10 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
     }
   };
 
+  const handleGoToUserPage = (userData: AggregatedUserData) => {
+    navigate(`/users/${userData.uid}`);
+  };
+
   const userColumns = [
     { key: 'name', header: 'Tên', filterable: true },
     { key: 'uid', header: 'UID', filterable: true },
@@ -100,15 +113,26 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
       key: 'viewDetails', 
       header: 'Chi tiết', 
       render: (_: any, row: any) => (
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="flex items-center gap-1 text-primary"
-          onClick={() => handleViewDetails(row.userData)}
-        >
-          <Eye className="h-4 w-4" />
-          <span>Xem</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center gap-1 text-primary"
+            onClick={() => handleViewDetails(row.userData)}
+          >
+            <Eye className="h-4 w-4" />
+            <span>Xem</span>
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={() => handleGoToUserPage(row.userData)}
+          >
+            <ExternalLink className="h-4 w-4" />
+            <span>Trang chi tiết</span>
+          </Button>
+        </div>
       )
     },
     ...additionalColumns
@@ -120,14 +144,24 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold">Chi tiết người dùng: {selectedUser.name || selectedUser.uid}</h2>
-          <Button 
-            variant="outline" 
-            onClick={() => setSelectedUser(null)} 
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Quay lại danh sách
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => handleGoToUserPage(selectedUser)} 
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Xem trang chi tiết
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setSelectedUser(null)} 
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Quay lại danh sách
+            </Button>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
