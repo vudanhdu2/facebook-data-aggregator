@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Upload, History, Users, ChevronDown, ChevronUp, User, Folder, FileText, List } from 'lucide-react';
+import { Upload, History, Users, ChevronDown, ChevronUp, User, Folder, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarNavProps {
@@ -36,13 +36,6 @@ const SidebarNav: React.FC<SidebarNavProps> = ({ className }) => {
   ];
   
   const userSubItems = [
-    {
-      name: "Danh sách người dùng",
-      icon: List,
-      href: "/users",
-      active: location.pathname === "/users",
-      description: "Xem danh sách tất cả người dùng"
-    },
     {
       name: "UID PROFILE",
       icon: User,
