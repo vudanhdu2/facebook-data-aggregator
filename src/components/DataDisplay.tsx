@@ -100,9 +100,33 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
     navigate(`/${userData.uid}`);
   };
 
+  const handleUIDClick = (uid: string) => {
+    toast({
+      title: "Đang chuyển hướng",
+      description: `Đến trang chi tiết của UID: ${uid}`,
+    });
+    navigate(`/${uid}`);
+  };
+
   const userColumns = [
-    { key: 'name', header: 'Tên', filterable: true },
-    { key: 'uid', header: 'UID', filterable: true },
+    { 
+      key: 'name', 
+      header: 'Tên', 
+      filterable: true 
+    },
+    { 
+      key: 'uid', 
+      header: 'UID', 
+      filterable: true,
+      render: (value: string) => (
+        <button 
+          onClick={() => handleUIDClick(value)}
+          className="text-blue-600 hover:text-blue-800 hover:underline"
+        >
+          {value}
+        </button>
+      )
+    },
     { key: 'friendsCount', header: 'Bạn bè', filterable: true },
     { key: 'groupsCount', header: 'Nhóm', filterable: true },
     { key: 'postsCount', header: 'Bài đăng', filterable: true },
