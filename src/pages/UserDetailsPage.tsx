@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
@@ -10,8 +9,8 @@ import UserDetailStats from '@/components/UserDetailStats';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import { AggregatedUserData } from '@/types';
+import { DataTable } from '@/components/ui/data-table';
 
-// Helper function to get user data from storage
 const getUserFromStorage = (uid: string): AggregatedUserData | null => {
   try {
     const storedData = sessionStorage.getItem('aggregatedUserData');
@@ -55,7 +54,6 @@ const UserDetailsPage: React.FC = () => {
     }
 
     setUserData(user);
-    // Set page title to include user name or UID
     document.title = `Chi tiết: ${user.name || user.uid}`;
   }, [uid, navigate, toast]);
 
@@ -88,6 +86,36 @@ const UserDetailsPage: React.FC = () => {
       </div>
     );
   };
+
+  const groupColumns = [
+    { key: 'name', header: 'Tên nhóm', filterable: true },
+    { key: 'group_id', header: 'ID', filterable: true }
+  ];
+
+  const pageColumns = [
+    { key: 'name', header: 'Tên trang', filterable: true },
+    { key: 'category', header: 'Danh mục', filterable: true }
+  ];
+
+  const checkInColumns = [
+    { key: 'place_name', header: 'Địa điểm', filterable: true },
+    { 
+      key: 'checkin_time', 
+      header: 'Thời gian', 
+      filterable: true,
+      render: (value: string) => value ? formatDate(new Date(value)) : 'N/A'
+    }
+  ];
+
+  const eventColumns = [
+    { key: 'name', header: 'Tên sự kiện', filterable: true },
+    { 
+      key: 'start_time', 
+      header: 'Thời gian bắt đầu',
+      filterable: true,
+      render: (value: string) => value ? formatDate(new Date(value)) : 'N/A'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -235,19 +263,16 @@ const UserDetailsPage: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Nhóm đã tham gia ({userData.data.groups.length})</CardTitle>
                 </CardHeader>
-                <CardContent className="max-h-96 overflow-auto">
-                  <div className="space-y-2">
-                    {userData.data.groups.length > 0 ? (
-                      userData.data.groups.map((group, index) => (
-                        <div key={index} className="p-2 border rounded">
-                          <p className="font-medium">{group.name || 'Không có tên'}</p>
-                          <p className="text-sm text-gray-500">ID: {group.group_id || group.id}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">Không có dữ liệu</p>
-                    )}
-                  </div>
+                <CardContent>
+                  {userData.data.groups.length > 0 ? (
+                    <DataTable
+                      data={userData.data.groups}
+                      columns={groupColumns}
+                      filterableColumns={['name', 'group_id']}
+                    />
+                  ) : (
+                    <p className="text-gray-500">Không có dữ liệu</p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -255,21 +280,16 @@ const UserDetailsPage: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Pages đã thích ({userData.data.pagesLiked.length})</CardTitle>
                 </CardHeader>
-                <CardContent className="max-h-96 overflow-auto">
-                  <div className="space-y-2">
-                    {userData.data.pagesLiked.length > 0 ? (
-                      userData.data.pagesLiked.map((page, index) => (
-                        <div key={index} className="p-2 border rounded">
-                          <p className="font-medium">{page.name || 'Không có tên'}</p>
-                          <p className="text-sm text-gray-500">
-                            {page.category && `Danh mục: ${page.category}`}
-                          </p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">Không có dữ liệu</p>
-                    )}
-                  </div>
+                <CardContent>
+                  {userData.data.pagesLiked.length > 0 ? (
+                    <DataTable
+                      data={userData.data.pagesLiked}
+                      columns={pageColumns}
+                      filterableColumns={['name', 'category']}
+                    />
+                  ) : (
+                    <p className="text-gray-500">Không có dữ liệu</p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -277,21 +297,16 @@ const UserDetailsPage: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Check-ins ({userData.data.checkIns.length})</CardTitle>
                 </CardHeader>
-                <CardContent className="max-h-96 overflow-auto">
-                  <div className="space-y-2">
-                    {userData.data.checkIns.length > 0 ? (
-                      userData.data.checkIns.map((checkIn, index) => (
-                        <div key={index} className="p-2 border rounded">
-                          <p className="font-medium">{checkIn.place_name || 'Không có tên'}</p>
-                          <p className="text-sm text-gray-500">
-                            {checkIn.checkin_time && `Thời gian: ${formatDate(new Date(checkIn.checkin_time))}`}
-                          </p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">Không có dữ liệu</p>
-                    )}
-                  </div>
+                <CardContent>
+                  {userData.data.checkIns.length > 0 ? (
+                    <DataTable
+                      data={userData.data.checkIns}
+                      columns={checkInColumns}
+                      filterableColumns={['place_name', 'checkin_time']}
+                    />
+                  ) : (
+                    <p className="text-gray-500">Không có dữ liệu</p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -299,21 +314,16 @@ const UserDetailsPage: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Sự kiện ({userData.data.events.length})</CardTitle>
                 </CardHeader>
-                <CardContent className="max-h-96 overflow-auto">
-                  <div className="space-y-2">
-                    {userData.data.events.length > 0 ? (
-                      userData.data.events.map((event, index) => (
-                        <div key={index} className="p-2 border rounded">
-                          <p className="font-medium">{event.name || 'Không có tên'}</p>
-                          <p className="text-sm text-gray-500">
-                            {event.start_time && `Bắt đầu: ${formatDate(new Date(event.start_time))}`}
-                          </p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">Không có dữ liệu</p>
-                    )}
-                  </div>
+                <CardContent>
+                  {userData.data.events.length > 0 ? (
+                    <DataTable
+                      data={userData.data.events}
+                      columns={eventColumns}
+                      filterableColumns={['name', 'start_time']}
+                    />
+                  ) : (
+                    <p className="text-gray-500">Không có dữ liệu</p>
+                  )}
                 </CardContent>
               </Card>
             </div>

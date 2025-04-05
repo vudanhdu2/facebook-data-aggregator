@@ -17,7 +17,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
 
-  // Mock user data - in a real app would come from database
   const mockMemberUsers = [
     { id: '2', name: 'Member User', email: 'member@example.com', role: UserRole.MEMBER, filesUploaded: 3, lastActive: '2023-12-01' },
     { id: '3', name: 'Another Member', email: 'another@example.com', role: UserRole.MEMBER, filesUploaded: 1, lastActive: '2023-11-15' },
@@ -26,9 +25,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ uploadedFiles = [] }) =
 
   const totalFiles = uploadedFiles.length;
   const totalMembers = mockMemberUsers.length;
-  const recentActivityCount = totalFiles; // In a real app, this would be actual activity count
+  const recentActivityCount = totalFiles;
 
-  // Table column definitions with enhanced filter options
   const userColumns = [
     { key: 'name', header: 'Tên', filterable: true },
     { key: 'email', header: 'Email', filterable: true },

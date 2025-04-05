@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import {
   Table,
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, Filter, X, ChevronDown, FilterX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DataFilter, FilterCondition } from "./data-filter";
 
 interface DataTableColumn {
   key: string;
@@ -38,12 +40,6 @@ interface DataTableColumn {
   render?: (value: any, row: any) => React.ReactNode;
   width?: string;
   filterOptions?: string[]; // For dropdown filter options
-}
-
-interface FilterCondition {
-  column: string;
-  value: string;
-  operator: "contains" | "equals" | "startsWith" | "endsWith" | "greaterThan" | "lessThan";
 }
 
 interface DataTableProps<T> {
@@ -67,11 +63,11 @@ export function DataTable<T extends Record<string, any>>({
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filters, setFilters] = useState<Record<string, string>>({});
-  const [activeFilterColumn, setActiveFilterColumn] = useState<string | null>(null);
   const [filterConditions, setFilterConditions] = useState<FilterCondition[]>([]);
 
   const filteredData = useMemo(() => {
     return data.filter(row => {
+      // Apply quick filters
       for (const [key, value] of Object.entries(filters)) {
         if (!value) continue;
         
@@ -81,8 +77,9 @@ export function DataTable<T extends Record<string, any>>({
         }
       }
       
+      // Apply advanced filter conditions
       for (const condition of filterConditions) {
-        const cellValue = String(row[condition.column] || '');
+        const cellValue = String(row[condition.field] || '');
         const filterValue = condition.value;
         
         switch (condition.operator) {
@@ -115,6 +112,7 @@ export function DataTable<T extends Record<string, any>>({
         }
       }
       
+      // Apply global search
       if (searchQuery) {
         const searchFields = columns.filter(col => col.filterable || filterableColumns.includes(col.key)).map(col => col.key);
         return searchFields.some(field => 
@@ -126,30 +124,18 @@ export function DataTable<T extends Record<string, any>>({
     });
   }, [data, filters, filterConditions, searchQuery, columns, filterableColumns]);
 
-  const availableFilterColumns = columns.filter(col => 
-    filterableColumns.includes(col.key) || col.filterable
-  );
-
-  const handleFilterChange = (key: string, value: string) => {
+  const handleQuickFilterChange = (key: string, value: string) => {
     setFilters(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
-  const addFilterCondition = (column: string, value: string, operator: FilterCondition["operator"]) => {
-    setFilterConditions(prev => [
-      ...prev,
-      { column, value, operator }
-    ]);
-    setActiveFilterColumn(null);
+  const handleFilterConditionsChange = (newConditions: FilterCondition[]) => {
+    setFilterConditions(newConditions);
   };
 
-  const removeFilterCondition = (index: number) => {
-    setFilterConditions(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const clearFilter = (key: string) => {
+  const clearQuickFilter = (key: string) => {
     setFilters(prev => {
       const newFilters = { ...prev };
       delete newFilters[key];
@@ -163,57 +149,9 @@ export function DataTable<T extends Record<string, any>>({
     setSearchQuery("");
   };
 
-  const addFilter = (columnKey: string) => {
-    setActiveFilterColumn(null);
-    if (!filters[columnKey]) {
-      setFilters(prev => ({
-        ...prev,
-        [columnKey]: ''
-      }));
-    }
-  };
-
-  const isNumericColumn = (columnKey: string) => {
-    const sample = data.find(row => row[columnKey] !== undefined && row[columnKey] !== null);
-    if (!sample) return false;
-    return !isNaN(Number(sample[columnKey]));
-  };
-
-  const getUniqueValues = (columnKey: string) => {
-    const uniqueValues = new Set<string>();
-    data.forEach(row => {
-      if (row[columnKey] !== undefined && row[columnKey] !== null) {
-        uniqueValues.add(String(row[columnKey]));
-      }
-    });
-    return Array.from(uniqueValues).sort();
-  };
-
-  const renderOperatorDropdown = (columnKey: string) => {
-    const isNumeric = isNumericColumn(columnKey);
-    
-    return (
-      <Select onValueChange={(value) => {
-        addFilterCondition(columnKey, '', value as FilterCondition["operator"]);
-      }}>
-        <SelectTrigger className="w-[160px]">
-          <SelectValue placeholder="Chọn điều kiện" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="contains">Chứa</SelectItem>
-          <SelectItem value="equals">Bằng</SelectItem>
-          <SelectItem value="startsWith">Bắt đầu với</SelectItem>
-          <SelectItem value="endsWith">Kết thúc với</SelectItem>
-          {isNumeric && (
-            <>
-              <SelectItem value="greaterThan">Lớn hơn</SelectItem>
-              <SelectItem value="lessThan">Nhỏ hơn</SelectItem>
-            </>
-          )}
-        </SelectContent>
-      </Select>
-    );
-  };
+  const availableFilterColumns = columns.filter(col => 
+    filterableColumns.includes(col.key) || col.filterable
+  );
 
   return (
     <div className="space-y-4">
@@ -235,57 +173,15 @@ export function DataTable<T extends Record<string, any>>({
             </button>
           )}
         </div>
-        
-        <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Filter className="h-4 w-4" />
-                Thêm bộ lọc
-                <ChevronDown className="h-4 w-4 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {availableFilterColumns.map((column) => (
-                <DropdownMenuItem 
-                  key={column.key} 
-                  onClick={() => setActiveFilterColumn(column.key)}
-                  disabled={Boolean(filters[column.key])}
-                >
-                  {column.header}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {(Object.keys(filters).length > 0 || filterConditions.length > 0 || searchQuery) && (
-            <Button
-              variant="ghost"
-              onClick={clearAllFilters}
-              className="flex items-center gap-2"
-            >
-              <FilterX className="h-4 w-4" />
-              Xóa tất cả
-            </Button>
-          )}
-        </div>
       </div>
       
-      {activeFilterColumn && (
-        <div className="p-4 border rounded-md bg-muted/30">
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-            <div className="font-medium">{columns.find(col => col.key === activeFilterColumn)?.header}:</div>
-            <div className="flex flex-wrap gap-2 flex-1">
-              {renderOperatorDropdown(activeFilterColumn)}
-              <Button variant="ghost" size="sm" onClick={() => setActiveFilterColumn(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DataFilter 
+        columns={availableFilterColumns}
+        onFilterChange={handleFilterConditionsChange}
+        activeFilters={filterConditions}
+      />
       
-      {(Object.keys(filters).length > 0 || filterConditions.length > 0) && (
+      {Object.keys(filters).length > 0 && (
         <div className="flex flex-wrap gap-2">
           {Object.entries(filters).map(([key, value]) => {
             const column = columns.find(col => col.key === key);
@@ -294,12 +190,12 @@ export function DataTable<T extends Record<string, any>>({
                 <span className="text-sm font-medium">{column?.header || key}:</span>
                 <Input
                   value={value}
-                  onChange={(e) => handleFilterChange(key, e.target.value)}
+                  onChange={(e) => handleQuickFilterChange(key, e.target.value)}
                   className="h-6 rounded-sm border-none bg-transparent p-0 text-sm focus-visible:outline-none focus-visible:ring-0 w-24"
                   placeholder="Tìm kiếm..."
                 />
                 <button 
-                  onClick={() => clearFilter(key)}
+                  onClick={() => clearQuickFilter(key)}
                   className="rounded-full hover:bg-background/90 p-0.5"
                 >
                   <X className="h-3 w-3" />
@@ -307,108 +203,6 @@ export function DataTable<T extends Record<string, any>>({
               </div>
             );
           })}
-          
-          {filterConditions.map((condition, index) => {
-            const column = columns.find(col => col.key === condition.column);
-            
-            let operatorText = "";
-            switch(condition.operator) {
-              case "contains": operatorText = "chứa"; break;
-              case "equals": operatorText = "bằng"; break;
-              case "startsWith": operatorText = "bắt đầu với"; break;
-              case "endsWith": operatorText = "kết thúc với"; break;
-              case "greaterThan": operatorText = ">"; break;
-              case "lessThan": operatorText = "<"; break;
-            }
-            
-            return (
-              <Badge key={index} variant="secondary" className="flex items-center gap-1 px-3 py-1">
-                <span className="font-medium">{column?.header || condition.column}</span>
-                <span>{operatorText}</span>
-                <span>"{condition.value}"</span>
-                <button 
-                  onClick={() => removeFilterCondition(index)}
-                  className="ml-2 hover:bg-muted rounded-full p-0.5"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            );
-          })}
-        </div>
-      )}
-
-      {filterConditions.length > 0 && filterConditions.some(c => c.value === '') && (
-        <div className="p-4 border rounded-md bg-muted/30">
-          {filterConditions
-            .filter(c => c.value === '')
-            .map((condition, index) => {
-              const column = columns.find(col => col.key === condition.column);
-              
-              const handleValueChange = (value: string) => {
-                setFilterConditions(prev => 
-                  prev.map((c, i) => 
-                    i === prev.findIndex(fc => fc.value === '' && fc.column === condition.column) 
-                      ? { ...c, value } 
-                      : c
-                  )
-                );
-              };
-              
-              const columnDef = columns.find(col => col.key === condition.column);
-              const hasFilterOptions = columnDef?.filterOptions && columnDef.filterOptions.length > 0;
-              
-              return (
-                <div key={index} className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <div>
-                    <span className="font-medium">{column?.header || condition.column}</span>
-                    <span className="mx-2">
-                      {condition.operator === "contains" && "chứa"}
-                      {condition.operator === "equals" && "bằng"}
-                      {condition.operator === "startsWith" && "bắt đầu với"}
-                      {condition.operator === "endsWith" && "kết thúc với"}
-                      {condition.operator === "greaterThan" && "lớn hơn"}
-                      {condition.operator === "lessThan" && "nhỏ hơn"}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 flex-1">
-                    {hasFilterOptions ? (
-                      <Select onValueChange={handleValueChange}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Chọn giá trị..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {columnDef?.filterOptions?.map(option => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input 
-                        placeholder="Nhập giá trị..." 
-                        className="flex-1"
-                        onChange={(e) => handleValueChange(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && e.currentTarget.value) {
-                            handleValueChange(e.currentTarget.value);
-                          }
-                        }}
-                      />
-                    )}
-                    
-                    <Button 
-                      variant="outline"
-                      onClick={() => {
-                        setFilterConditions(prev => prev.filter(c => !(c.value === '' && c.column === condition.column)));
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
         </div>
       )}
 
@@ -437,20 +231,13 @@ export function DataTable<T extends Record<string, any>>({
                               placeholder="Nhập giá trị..."
                               className="w-full"
                               value={filters[column.key] || ''}
-                              onChange={(e) => handleFilterChange(column.key, e.target.value)}
+                              onChange={(e) => handleQuickFilterChange(column.key, e.target.value)}
                             />
                             <div className="flex justify-between">
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                onClick={() => setActiveFilterColumn(column.key)}
-                              >
-                                Lọc nâng cao
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                onClick={() => clearFilter(column.key)}
+                                onClick={() => clearQuickFilter(column.key)}
                               >
                                 Xóa
                               </Button>
