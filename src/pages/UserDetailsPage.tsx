@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate } from '@/lib/utils';
@@ -11,8 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Header from '@/components/Header';
 import { AggregatedUserData } from '@/types';
 
-// Tạm thời sử dụng sessionStorage để lưu dữ liệu người dùng giữa các trang
-// Trong thực tế, bạn nên sử dụng state management như Redux hoặc Context
+// Helper function to get user data from storage
 const getUserFromStorage = (uid: string): AggregatedUserData | null => {
   try {
     const storedData = sessionStorage.getItem('aggregatedUserData');
@@ -56,6 +55,8 @@ const UserDetailsPage: React.FC = () => {
     }
 
     setUserData(user);
+    // Set page title to include user name or UID
+    document.title = `Chi tiết: ${user.name || user.uid}`;
   }, [uid, navigate, toast]);
 
   const handleGoBack = () => {
@@ -105,6 +106,9 @@ const UserDetailsPage: React.FC = () => {
           <h1 className="text-3xl font-bold">
             Chi tiết người dùng: {userData.name || userData.uid}
           </h1>
+          <p className="text-gray-500 mt-1">
+            UID: {userData.uid}
+          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

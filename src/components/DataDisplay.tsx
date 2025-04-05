@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
@@ -28,7 +27,6 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<AggregatedUserData | null>(null);
 
-  // Store aggregatedData in sessionStorage for access in the details page
   useEffect(() => {
     if (aggregatedData && aggregatedData.length > 0) {
       sessionStorage.setItem('aggregatedUserData', JSON.stringify(aggregatedData));
@@ -45,7 +43,6 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
     );
   }
 
-  // Format the aggregated data for table display
   const tableData = aggregatedData.map(user => {
     const sourceTypes = user.sources.map(source => source.sourceType);
     const hasProfile = sourceTypes.includes(DataSourceType.UID_PROFILE);
@@ -68,7 +65,7 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
         hasGroup ? 'Group' : null,
         hasPage ? 'Page' : null
       ].filter(Boolean).join(', '),
-      userData: user // Pass the full user data for the action handlers
+      userData: user
     };
   });
 
@@ -95,14 +92,12 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
   };
 
   const handleGoToUserPage = (userData: AggregatedUserData) => {
-    // Add a toast notification to indicate navigation
     toast({
       title: "Đang chuyển hướng",
       description: `Đến trang chi tiết của ${userData.name || userData.uid}`,
     });
     
-    // Navigate to the user detail page
-    navigate(`/users/${userData.uid}`);
+    navigate(`/${userData.uid}`);
   };
 
   const userColumns = [
@@ -145,7 +140,6 @@ const DataDisplay: React.FC<DataDisplayProps> = ({
     ...additionalColumns
   ];
 
-  // Return detailed user view if a user is selected
   if (selectedUser) {
     return (
       <div className="space-y-6">

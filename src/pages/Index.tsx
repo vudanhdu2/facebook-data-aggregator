@@ -7,11 +7,30 @@ import SidebarNav from '../components/SidebarNav';
 
 const Index = () => {
   const location = useLocation();
-  const showSidebar = !location.pathname.includes('/users/') || 
-                       location.pathname === '/users' ||
-                       location.pathname === '/users/profile' ||
-                       location.pathname === '/users/group' ||
-                       location.pathname === '/users/page';
+  const path = location.pathname;
+  
+  // Check if the current route is a direct UID route or a user detail page
+  const isUserDetailPage = (
+    // Match /users/:uid pattern
+    path.includes('/users/') && 
+    path !== '/users' && 
+    path !== '/users/profile' && 
+    path !== '/users/group' && 
+    path !== '/users/page'
+  ) || (
+    // Match direct /:uid pattern (except for known routes)
+    path.length > 1 && 
+    !path.includes('/') && 
+    path !== '/upload' && 
+    path !== '/history' && 
+    path !== '/stats' && 
+    path !== '/admin' && 
+    path !== '/login' && 
+    path !== '/register'
+  );
+  
+  // Show sidebar on all pages except user detail pages
+  const showSidebar = !isUserDetailPage;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">

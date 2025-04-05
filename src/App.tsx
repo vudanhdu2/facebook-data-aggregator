@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -75,6 +74,12 @@ const App = () => (
               </ProtectedRoute>
             } />
             
+            <Route path="/:uid" element={
+              <ProtectedRoute>
+                <UserDetailsPage />
+              </ProtectedRoute>
+            } />
+            
             <Route path="/users/:uid" element={
               <ProtectedRoute>
                 <UserDetailsPage />
@@ -87,7 +92,6 @@ const App = () => (
               </ProtectedRoute>
             } />
             
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
