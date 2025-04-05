@@ -16,6 +16,9 @@ import { Button } from '@/components/ui/button';
 import DataDialog from './DataDialog';
 import AIAnalysis from './AIAnalysis';
 
+const LOCAL_STORAGE_FILES_KEY = 'uploadedFiles';
+const LOCAL_STORAGE_AGGREGATED_DATA_KEY = 'aggregatedData';
+
 const Dashboard: React.FC = () => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [aggregatedData, setAggregatedData] = useState<AggregatedUserData[]>([]);
@@ -30,6 +33,37 @@ const Dashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    try {
+      const savedFiles = localStorage.getItem(LOCAL_STORAGE_FILES_KEY);
+      const savedAggregatedData = localStorage.getItem(LOCAL_STORAGE_AGGREGATED_DATA_KEY);
+      
+      if (savedFiles) {
+        const parsedFiles = JSON.parse(savedFiles);
+        const filesWithDates = parsedFiles.map((file: any) => ({
+          ...file,
+          uploadDate: new Date(file.uploadDate)
+        }));
+        setUploadedFiles(filesWithDates);
+      }
+      
+      if (savedAggregatedData) {
+        const parsedData = JSON.parse(savedAggregatedData);
+        const dataWithDates = parsedData.map((item: any) => ({
+          ...item,
+          lastActive: item.lastActive ? new Date(item.lastActive) : null,
+          sources: item.sources.map((source: any) => ({
+            ...source,
+            timestamp: new Date(source.timestamp)
+          }))
+        }));
+        setAggregatedData(dataWithDates);
+      }
+    } catch (error) {
+      console.error("Error loading data from localStorage:", error);
+    }
+  }, []);
 
   useEffect(() => {
     const path = location.pathname;
@@ -53,6 +87,18 @@ const Dashboard: React.FC = () => {
       setActiveTab("stats");
     }
   }, [location]);
+
+  useEffect(() => {
+    if (uploadedFiles.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_FILES_KEY, JSON.stringify(uploadedFiles));
+    }
+  }, [uploadedFiles]);
+
+  useEffect(() => {
+    if (aggregatedData.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_AGGREGATED_DATA_KEY, JSON.stringify(aggregatedData));
+    }
+  }, [aggregatedData]);
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
     const filesWithUploader = files.map(file => ({
@@ -80,6 +126,17 @@ const Dashboard: React.FC = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const clearSavedData = () => {
+    localStorage.removeItem(LOCAL_STORAGE_FILES_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_AGGREGATED_DATA_KEY);
+    setUploadedFiles([]);
+    setAggregatedData([]);
+    toast({
+      title: "Đã xóa dữ liệu",
+      description: "Tất cả dữ liệu đã được xóa khỏi trình duyệt.",
+    });
   };
 
   const userFiles = user?.role === 'admin' 
@@ -290,6 +347,20 @@ const Dashboard: React.FC = () => {
             <h2 className="text-2xl font-bold mb-2">Tải lên và phân tích dữ liệu Facebook</h2>
             <p className="text-gray-500">Tải lên các file Excel chứa dữ liệu Facebook để phân tích và tổng hợp thông tin.</p>
           </div>
+          
+          {uploadedFiles.length > 0 && (
+            <div className="mb-6 flex justify-center">
+              <Button 
+                variant="destructive" 
+                onClick={clearSavedData}
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Xóa tất cả dữ liệu
+              </Button>
+            </div>
+          )}
+          
           <FileUpload onFilesUploaded={handleFilesUploaded} />
         </div>
       )}
