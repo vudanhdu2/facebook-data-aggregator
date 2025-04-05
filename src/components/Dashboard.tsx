@@ -7,7 +7,7 @@ import DataDisplay from './DataDisplay';
 import { UploadedFile, AggregatedUserData, DataSourceType } from '@/types';
 import { aggregateDataByUID } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
-import { Database, Upload, History, Users, FileText, Eye, Brain, User, Folder } from 'lucide-react';
+import { Database, Upload, History, Users, FileText, Eye, Brain, User, Folder, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { v4 as uuidv4 } from 'uuid';
 import { DataTable } from '@/components/ui/data-table';
