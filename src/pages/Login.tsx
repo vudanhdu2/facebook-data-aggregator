@@ -18,7 +18,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { consoleLogUtil } from "@/utils/consoleLogUtil";
+import { useSelector } from "react-redux";
 const formSchema = z.object({
   username: z.string(),
   password: z.string().min(1, { message: "Vui lòng nhập mật khẩu" }),
@@ -28,7 +29,8 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-
+  const userReducer = useSelector((state: any) => state.userReducer);
+  consoleLogUtil("UserReducer", userReducer);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,8 +41,10 @@ const Login = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
+    
     try {
       const success = await login(values.username, values.password);
+      consoleLogUtil("Login", success);
       if (success) {
         navigate("/");
       }
@@ -91,9 +95,6 @@ const Login = () => {
                 <Button loading={isLoading} type="submit" className="w-full cursor-pointer" variant="solid" size="3" color="blue">
                   {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
                 </Button>
-                {/* <Button type="submit" className="w-full" disabled={isLoading} loading={isLoading}>
-                  {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
-                </Button> */}
               </form>
             </Form>
           </CardContent>

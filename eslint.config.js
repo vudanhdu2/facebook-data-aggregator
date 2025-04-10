@@ -25,5 +25,17 @@ export default tseslint.config(
       ],
       "@typescript-eslint/no-unused-vars": "off",
     },
+  },
+  {
+    files: ["**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      sourceType: "module",
+    },
+    rules: {
+      // có thể thêm rules riêng cho .js nếu muốn
+      "@typescript-eslint/no-unused-vars": "off",
+    },
   }
 );

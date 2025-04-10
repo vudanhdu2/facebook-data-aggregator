@@ -88,3 +88,7 @@
   @apply p-4 bg-white rounded-lg shadow-sm;
   height: 300px;
 }
+
+.buton-add-user {
+  margin-left: 2rem;
+}
