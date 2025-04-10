@@ -4,9 +4,9 @@ import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@radix-ui/themes"
 
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -20,7 +20,7 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Email không hợp lệ" }),
+  username: z.string(),
   password: z.string().min(1, { message: "Vui lòng nhập mật khẩu" }),
 });
 
@@ -32,7 +32,7 @@ const Login = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
     },
   });
@@ -40,7 +40,7 @@ const Login = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      const success = await login(values.email, values.password);
+      const success = await login(values.username, values.password);
       if (success) {
         navigate("/");
       }
@@ -64,16 +64,13 @@ const Login = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Tài khoản</FormLabel>
                       <FormControl>
-                        <Input placeholder="example@gmail.com" type="email" {...field} />
+                        <Input placeholder="username" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Để thử nghiệm: admin@example.com hoặc member@example.com
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -87,25 +84,22 @@ const Login = () => {
                       <FormControl>
                         <Input placeholder="******" type="password" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        Với tài khoản demo, nhập bất kỳ mật khẩu nào
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button loading={isLoading} type="submit" className="w-full cursor-pointer" variant="solid" size="3" color="blue">
                   {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
                 </Button>
+                {/* <Button type="submit" className="w-full" disabled={isLoading} loading={isLoading}>
+                  {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                </Button> */}
               </form>
             </Form>
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">
-              Chưa có tài khoản?{" "}
-              <Link to="/register" className="text-primary underline hover:text-primary/90">
-                Đăng ký
-              </Link>
+              Hệ thống phân tích số liệu Facebook
             </p>
           </CardFooter>
         </Card>

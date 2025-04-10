@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { User, UserRole } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { login } from '../services/apis'
 
 interface AuthContextType {
   user: User | null;
@@ -60,18 +61,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      // Simulate API request delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Find user with matching email (in a real app, would also check password)
-      const matchedUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (matchedUser) {
-        setUser(matchedUser);
-        localStorage.setItem('currentUser', JSON.stringify(matchedUser));
+      const response = await 
+      if (response) {
         toast({
           title: "Đăng nhập thành công",
-          description: `Chào mừng ${matchedUser.name || matchedUser.email}!`
+          description: `Chào mừng bạn!`
         });
         return true;
       } else {
