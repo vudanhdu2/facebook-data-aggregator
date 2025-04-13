@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle, Calendar, UserCircle, FileText, Users, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA_SOURCE_OPTIONS } from '@/types';
-import { readExcelFile } from '@/utils/dataParser';
+import { formatUID, readExcelFile } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +30,11 @@ import {
 import { format } from 'date-fns';
 import { createDemoData } from '@/utils/demoData';
 import { v4 as uuidv4 } from 'uuid';
+import { FileTypeImport } from '@/models/import/FileTypeImport';
+import { AccountType } from '@/models/import/AccountType';
+import { getAllAccountType, getAllFileTypeImport, importFileEntities } from '@/services/apis';
+import { consoleLogUtil } from '@/utils/consoleLogUtil';
+import { AlertDialog, Flex } from "@radix-ui/themes"
 
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void;
@@ -45,6 +50,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [lstFileType, setLstFileType] = useState<FileTypeImport[]>([]);
+  const [lstAccountType, setLstAccountType] = useState<AccountType[]>([]);
+  const [showConfirmNoUID, setShowConfirmNoUID] = useState<boolean>(false);
+
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -54,6 +63,32 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
   const handleDragLeave = () => {
     setIsDragging(false);
   };
+
+  const getDataFileType = async () => {
+    try {
+      const response = await getAllFileTypeImport();
+      if (response?.success) {
+        setLstFileType([...response.data ?? []]);
+      } else {
+        setLstFileType([]);
+      }
+    } catch (error) {
+      console.error("Error fetching file types:", error);
+    }
+  }
+
+  const getDataAccountType = async () => {
+    try {
+      const response = await getAllAccountType();
+      if (response?.success) {
+        setLstAccountType([...response.data ?? []]);
+      } else {
+        setLstAccountType([]);
+      }
+    } catch (error) {
+      console.error("Error fetching account types:", error);
+    }
+  }
 
   const processFile = async (file: File, manualType?: FacebookDataType) => {
     try {
@@ -71,9 +106,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         
         if (user) {
           result.uploaderId = user.id;
-          result.uploaderName = user.name || user.email;
+          result.uploaderName = user.fullname;
         } else {
-          result.uploaderId = "anonymous";
+          result.uploaderId = 0;
           result.uploaderName = "Anonymous User";
         }
         
@@ -97,7 +132,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     setIsDragging(false);
     setIsProcessing(true);
     
-    const newFiles = Array.from(e.dataTransfer.files).filter(
+    const newFiles = [e.dataTransfer.files[0]].filter(
       file => file.name.endsWith('.xls') || file.name.endsWith('.xlsx')
     );
     
@@ -116,11 +151,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     );
     const validFiles = processedFiles.filter(Boolean) as UploadedFile[];
     
-    setFiles(prevFiles => {
-      const combinedFiles = [...prevFiles, ...validFiles];
-      onFilesUploaded(combinedFiles);
-      return combinedFiles;
-    });
+    if (files.length > 0) {
+      toast({
+        title: "Đã thay thế file cũ",
+        description: `File "${files[0].name}" đã bị thay bằng "${validFiles[0].name}".`,
+      });
+    }
+    setFiles(validFiles);
+    onFilesUploaded(validFiles);
     
     setIsProcessing(false);
     toast({
@@ -133,7 +171,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     if (!e.target.files?.length) return;
     
     setIsProcessing(true);
-    const newFiles = Array.from(e.target.files).filter(
+    const newFiles = [e.target.files[0]].filter(
       file => file.name.endsWith('.xls') || file.name.endsWith('.xlsx')
     );
     
@@ -147,17 +185,20 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       return;
     }
     
+    
+
     const processedFiles = await Promise.all(
       newFiles.map(file => processFile(file, selectedFileType || undefined))
     );
     const validFiles = processedFiles.filter(Boolean) as UploadedFile[];
-    
-    setFiles(prevFiles => {
-      const combinedFiles = [...prevFiles, ...validFiles];
-      onFilesUploaded(combinedFiles);
-      return combinedFiles;
-    });
-    
+    if (files.length > 0) {
+      toast({
+        title: "Đã thay thế file cũ",
+        description: `File "${files[0].name}" đã bị thay bằng "${validFiles[0].name}".`,
+      });
+    }
+    setFiles(validFiles);
+    onFilesUploaded(validFiles);
     setIsProcessing(false);
     e.target.value = '';
     
@@ -223,54 +264,100 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     });
   };
 
-  const loadDemoData = () => {
-    const demoFiles = createDemoData();
+  const handleUploadFile = () => {
+    console.log("Upload file clicked ", selectedSourceType);
     
-    const enhancedDemoFiles = demoFiles.map(file => ({
-      ...file,
-      uploaderId: user?.id || "demo",
-      uploaderName: user?.name || user?.email || "Demo User"
-    }));
-    
-    setFiles(prevFiles => {
-      const combinedFiles = [...prevFiles, ...enhancedDemoFiles];
-      onFilesUploaded(combinedFiles);
-      return combinedFiles;
-    });
-    
-    toast({
-      title: "Đã tải dữ liệu demo",
-      description: `Đã thêm ${demoFiles.length} file demo để thử nghiệm.`,
-    });
-  };
-
-  const loadLargeDemoData = () => {
-    toast({
-      title: "Đang tạo dữ liệu lớn",
-      description: "Đang tạo bộ dữ liệu lớn mô phỏng người dùng Facebook thực...",
-    });
-
-    setTimeout(() => {
-      const largeDataFiles = createDemoData(true);
-      
-      const enhancedDemoFiles = largeDataFiles.map(file => ({
-        ...file,
-        uploaderId: user?.id || "demo",
-        uploaderName: user?.name || user?.email || "Demo User"
-      }));
-      
-      setFiles(prevFiles => {
-        const combinedFiles = [...prevFiles, ...enhancedDemoFiles];
-        onFilesUploaded(combinedFiles);
-        return combinedFiles;
-      });
-      
+    if (!selectedFileType) {
       toast({
-        title: "Đã tải dữ liệu lớn",
-        description: `Đã thêm ${largeDataFiles.length} file với gần 1 triệu bản ghi dữ liệu Facebook thực tế.`,
+        title: "Chưa chọn loại dữ liệu",
+        description: "Vui lòng chọn loại dữ liệu trước khi tải lên.",
+        variant: "destructive"
       });
-    }, 1000);
+      return;
+    }
+    if (files.length === 0) {
+      toast({
+        title: "Chưa có file nào được tải lên",
+        description: "Vui lòng tải lên ít nhất một file trước khi lưu.",
+        variant: "destructive"
+      });
+      return;
+    }
+    if (!selectedSourceType) {
+      toast({
+        title: "Chưa nhập loại tài khoản",
+        description: "Vui lòng nhập loại tài khoản trước khi tải lên.",
+        variant: "destructive"
+      });
+      return;
+    }
+    if (isProcessing) {
+      toast({
+        title: "Đang xử lý",
+        description: "Vui lòng đợi cho đến khi quá trình tải lên hoàn tất.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    switch (selectedFileType) {
+      case FacebookDataType.FRIENDS: // Tìm uid bạn bè
+        handleUploadUIDFriends();
+        break;
+    
+      default:
+        break;
+    }
+
   };
+  const handleUploadUIDFriends = async () => {
+    const uid = sourceUID.trim();
+
+    if (!uid) {
+      setShowConfirmNoUID(true); // Show confirm popup
+      return;
+    }
+
+    await processUpload(uid);
+    
+  }
+  
+  const processUpload = async (uid: string | null) => {
+    setIsProcessing(true);
+    const file = files[0];
+    const payload = {
+      file_name: file.name,
+      uid: uid || null,
+      user_id: file.uploaderId,
+      data_type_id: lstFileType.find(item => item.code === selectedFileType)?.id,
+      account_type_id: lstAccountType.find(item => item.code === selectedSourceType)?.id,
+      file_size: file.size,
+      row_count: file.rowCount,
+      relation_type: FacebookDataType.FRIENDS,
+      type: selectedSourceType,
+      uids: formatUID(file.data, 0),
+    };
+  
+    console.log(payload);
+    const res = await importFileEntities(payload);
+    setIsProcessing(false);
+  
+    if (res?.success) {
+      setFiles([]);
+      onFilesUploaded([]);
+      toast({
+        title: "Đã tải lên thành công",
+        description: `Đã tải ${res.data.inserted.length} dòng, trùng ${res.data.skipped.length} dòng.`,
+      });
+    } else {
+      toast({
+        title: "Lỗi tải lên",
+        description: res?.message || "Đã xảy ra lỗi khi tải lên file.",
+        variant: "destructive",
+      });
+    }
+  };
+  
 
   const getFacebookDataTypeLabel = (type: FacebookDataType): string => {
     const option = FILE_TYPE_OPTIONS.find(opt => opt.value === type);
@@ -294,7 +381,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         return <UserCircle className="h-3 w-3 mr-1" />;
     }
   };
-
+  useEffect(() => {
+    getDataFileType();
+    getDataAccountType();
+  }
+  , []);
   return (
     <div className="space-y-4 w-full">
       <Card>
@@ -309,9 +400,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                   <SelectValue placeholder="Chọn loại dữ liệu (tùy chọn)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {FILE_TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {lstFileType.map((option) => (
+                    <SelectItem key={option.code} value={option.code}>
+                      {option.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -325,9 +416,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                   <SelectValue placeholder="Chọn nguồn dữ liệu" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DATA_SOURCE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {lstAccountType.map((option) => (
+                    <SelectItem key={option.code} value={option.code}>
+                      {option.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -354,26 +445,42 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                   
                   <Button
                     variant="secondary"
-                    onClick={loadDemoData}
+                    onClick={handleUploadFile}
                     disabled={isProcessing}
                     className="w-full"
                   >
                     <Database className="h-4 w-4 mr-2" />
-                    Tải demo nhỏ
-                  </Button>
-
-                  <Button
-                    variant="default"
-                    onClick={loadLargeDemoData}
-                    disabled={isProcessing}
-                    className="w-full sm:col-span-1 col-span-2"
-                  >
-                    <Database className="h-4 w-4 mr-2" />
-                    Tải dữ liệu lớn (1M+)
+                    Lưu dữ liệu
                   </Button>
                 </div>
               </div>
             </div>
+            <AlertDialog.Root open={showConfirmNoUID} onOpenChange={setShowConfirmNoUID}>
+              <AlertDialog.Content>
+                <AlertDialog.Title>Không nhập UID</AlertDialog.Title>
+                <AlertDialog.Description>
+                  Bạn chưa nhập UID nguồn. Bạn có chắc chắn muốn tiếp tục tải lên mà không có UID?
+                </AlertDialog.Description>
+
+                <Flex gap="3" mt="4" justify="end">
+                  <AlertDialog.Cancel>
+                    <Button variant="secondary" color="gray">Hủy</Button>
+                  </AlertDialog.Cancel>
+                  <AlertDialog.Action>
+                    <Button
+                      variant="default"
+                      color="blue"
+                      onClick={() => {
+                        setShowConfirmNoUID(false)
+                        processUpload(null) // tiếp tục mà không có UID
+                      }}
+                    >
+                      Tiếp tục
+                    </Button>
+                  </AlertDialog.Action>
+                </Flex>
+              </AlertDialog.Content>
+            </AlertDialog.Root>
 
             <div
               className={`file-drop-area ${isDragging ? 'border-primary bg-primary/10' : ''} ${isProcessing ? 'opacity-60 cursor-wait' : ''} border-2 border-dashed rounded-lg p-8 text-center`}
@@ -386,7 +493,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                 ref={fileInputRef}
                 onChange={handleFileInputChange}
                 accept=".xls,.xlsx"
-                multiple
                 className="hidden"
                 disabled={isProcessing}
               />
@@ -408,7 +514,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       {files.length > 0 && (
         <Card>
           <CardContent className="pt-6">
-            <h3 className="font-medium text-lg mb-3">Files đã tải lên</h3>
+            <h3 className="font-medium text-lg mb-3">Files đã chọn</h3>
             <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
               {files.map((file, index) => (
                 <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-md border">

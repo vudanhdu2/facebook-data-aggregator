@@ -15,6 +15,7 @@ import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import DataDialog from './DataDialog';
 import AIAnalysis from './AIAnalysis';
+import HistoryUploadFile from './HistoryUploadFile';
 
 const LOCAL_STORAGE_FILES_KEY = 'uploadedFiles';
 const LOCAL_STORAGE_AGGREGATED_DATA_KEY = 'aggregatedData';
@@ -105,7 +106,7 @@ const Dashboard: React.FC = () => {
       ...file,
       id: file.id || uuidv4(),
       uploaderId: file.uploaderId || user?.id || 'anonymous',
-      uploaderName: file.uploaderName || user?.name || user?.email || 'Anonymous User'
+      uploaderName: file.uploaderName || user?.fullname || 'Anonymous User'
     }));
     
     setUploadedFiles(filesWithUploader);
@@ -347,20 +348,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-2xl font-bold mb-2">Tải lên và phân tích dữ liệu Facebook</h2>
             <p className="text-gray-500">Tải lên các file Excel chứa dữ liệu Facebook để phân tích và tổng hợp thông tin.</p>
           </div>
-          
-          {uploadedFiles.length > 0 && (
-            <div className="mb-6 flex justify-center">
-              <Button 
-                variant="destructive" 
-                onClick={clearSavedData}
-                className="flex items-center gap-2"
-              >
-                <X className="h-4 w-4" />
-                Xóa tất cả dữ liệu
-              </Button>
-            </div>
-          )}
-          
+                   
           <FileUpload onFilesUploaded={handleFilesUploaded} />
         </div>
       )}
@@ -370,11 +358,7 @@ const Dashboard: React.FC = () => {
           <h2 className="text-2xl font-bold mb-6 text-center">Lịch sử tải lên</h2>
           <div className="bg-white p-6 rounded-lg shadow-sm">
             {userFiles.length > 0 ? (
-              <DataTable 
-                data={userFiles}
-                columns={historyColumns}
-                filterableColumns={['name', 'type', 'uploaderName', 'rowCount', 'uploadDate']}
-              />
+              <HistoryUploadFile />
             ) : (
               <div className="text-center py-12 text-gray-500">
                 <History className="h-12 w-12 mx-auto mb-3 opacity-50" />

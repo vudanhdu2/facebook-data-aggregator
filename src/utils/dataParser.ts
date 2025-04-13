@@ -2,6 +2,7 @@
 import { FacebookData, FacebookDataType, AggregatedUserData, UploadedFile, UIDSource, DataSourceType } from '../types';
 import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
+import { formatFileSize } from './funcHelper';
 
 export async function readExcelFile(file: File): Promise<UploadedFile | null> {
   return new Promise((resolve, reject) => {
@@ -13,22 +14,24 @@ export async function readExcelFile(file: File): Promise<UploadedFile | null> {
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const dataExcel = handleFormatDataSheet(worksheet);
         
-        // Try to determine the data type from headers or content
-        const dataType = determineDataType(jsonData, file.name);
+        if (dataExcel.length > 0) {
+          dataExcel.shift(); // Remove header row
+        }
         
         resolve({
           id: uuidv4(), // Add a unique ID
           name: file.name,
-          type: dataType,
-          data: jsonData,
-          rowCount: jsonData.length,
+          type: FacebookDataType.UNKNOWN, // Default type, will be overridden
+          data: dataExcel,
+          rowCount: dataExcel.length,
           processed: false,
           manualType: false,
+          size: file.size,
           uploadDate: new Date(), // Add current timestamp
           sourceType: DataSourceType.UID_PROFILE, // Default source type, will be overridden if specified
-          uploaderId: 'system' // Default uploader ID, will be overridden
+          uploaderId: 0 // Default uploader ID, will be overridden
         });
       } catch (error) {
         console.error("Error parsing Excel file:", error);
@@ -44,57 +47,55 @@ export async function readExcelFile(file: File): Promise<UploadedFile | null> {
   });
 }
 
-function determineDataType(data: any[], fileName: string): FacebookDataType {
-  if (!data || data.length === 0) return FacebookDataType.UNKNOWN;
-  
-  const firstRow = data[0];
-  const headers = Object.keys(firstRow).map(h => h.toLowerCase());
-  const fileNameLower = fileName.toLowerCase();
-  
-  // Check filename first for quick determination
-  if (fileNameLower.includes('friend') || fileNameLower.includes('bạn')) {
-    return FacebookDataType.FRIENDS;
-  } else if (fileNameLower.includes('group') || fileNameLower.includes('nhóm')) {
-    return FacebookDataType.GROUPS;
-  } else if (fileNameLower.includes('post') || fileNameLower.includes('bài')) {
-    return FacebookDataType.POSTS;
-  } else if (fileNameLower.includes('comment') || fileNameLower.includes('bình luận')) {
-    return FacebookDataType.COMMENTS;
-  } else if (fileNameLower.includes('page') || fileNameLower.includes('trang')) {
-    return FacebookDataType.PAGES_LIKED;
-  } else if (fileNameLower.includes('check') || fileNameLower.includes('địa điểm')) {
-    return FacebookDataType.CHECK_INS;
-  } else if (fileNameLower.includes('profile') || fileNameLower.includes('hồ sơ')) {
-    return FacebookDataType.PROFILES;
-  } else if (fileNameLower.includes('message') || fileNameLower.includes('tin nhắn')) {
-    return FacebookDataType.MESSAGES;
-  } else if (fileNameLower.includes('photo') || fileNameLower.includes('ảnh')) {
-    return FacebookDataType.PHOTOS;
-  } else if (fileNameLower.includes('video')) {
-    return FacebookDataType.VIDEOS;
-  } else if (fileNameLower.includes('event') || fileNameLower.includes('sự kiện')) {
-    return FacebookDataType.EVENTS;
-  } else if (fileNameLower.includes('reaction') || fileNameLower.includes('biểu cảm')) {
-    return FacebookDataType.REACTIONS;
+const handleFormatDataSheet = (ws) => {
+  let range = XLSX.utils.decode_range(ws['!ref']);
+  const rows = [];
+
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    const row = [];
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cell_address = { c: C, r: R };
+      const cell_ref = XLSX.utils.encode_cell(cell_address);
+      const cell = ws[cell_ref];
+
+      if (cell) {
+        if (cell.t === 'n' && cell.z && cell.z.toLowerCase().includes("yy")) {
+          row.push(XLSX.SSF.format("yyyy-mm-dd hh:mm:ss", cell.v));
+        } else {
+          row.push(cell.v);
+        }
+      } else {
+        row.push("");
+      }
+    }
+    rows.push(row);
   }
-  
-  // If filename doesn't give us clues, check headers
-  if (headers.some(h => h.includes('friend') || h.includes('bạn'))) {
-    return FacebookDataType.FRIENDS;
-  } else if (headers.some(h => h.includes('group') || h.includes('nhóm'))) {
-    return FacebookDataType.GROUPS;
-  } else if (headers.some(h => h.includes('post') || h.includes('bài'))) {
-    return FacebookDataType.POSTS;
-  } else if (headers.some(h => h.includes('comment') || h.includes('bình luận'))) {
-    return FacebookDataType.COMMENTS;
-  } else if (headers.some(h => h.includes('page') || h.includes('trang'))) {
-    return FacebookDataType.PAGES_LIKED;
-  } else if (headers.some(h => h.includes('check') || h.includes('địa điểm'))) {
-    return FacebookDataType.CHECK_INS;
-  }
-  
-  return FacebookDataType.UNKNOWN;
+  return rows;
 }
+
+export const formatUID = (dataRows: string[][], uidIndex: number) => {
+  const parsed: string[][] = [];
+
+  for (const row of dataRows) {
+    if (!row || row.length < 2) continue;
+
+    const rawUid = row[uidIndex];
+
+    if (!rawUid) continue;
+
+    // Tách phần UID sau dấu chấm
+    const parts = rawUid.split('.');
+    if (parts.length < 2) continue;
+
+    const uid = parts.slice(1).join('.').trim();
+    if (!/^\d+$/.test(uid)) continue;
+    row[uidIndex] = uid;
+    parsed.push(row);
+  }
+
+  return parsed;
+}
+
 
 export function aggregateDataByUID(files: UploadedFile[]): AggregatedUserData[] {
   const userMap = new Map<string, AggregatedUserData>();
