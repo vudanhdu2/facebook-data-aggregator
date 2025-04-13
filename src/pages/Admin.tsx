@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,13 @@ import { UserRole, UploadedFile } from "@/types";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@radix-ui/themes";
+import { Dialog } from "@radix-ui/themes";
+import { UserParam } from "@/models/user/UserParam";
+import { addNewUser, getAllUsers, updateUserInfo } from "@/services/apis";
+import { useToast } from '@/components/ui/use-toast';
+import { consoleLogUtil } from "@/utils/consoleLogUtil";
+import { UserData } from "@/models/user/UserData";
+import UserFormModal from "@/components/UserFormModal";
 
 interface AdminDashboardProps {
     uploadedFiles?: UploadedFile[];
@@ -19,46 +26,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState("overview");
-
-    const mockMemberUsers = [
-        {
-            id: "2",
-            name: "Member User",
-            email: "member@example.com",
-            role: UserRole.MEMBER,
-            filesUploaded: 3,
-            lastActive: "2023-12-01",
-        },
-        {
-            id: "3",
-            name: "Another Member",
-            email: "another@example.com",
-            role: UserRole.MEMBER,
-            filesUploaded: 1,
-            lastActive: "2023-11-15",
-        },
-        {
-            id: "4",
-            name: "New User",
-            email: "new@example.com",
-            role: UserRole.MEMBER,
-            filesUploaded: 0,
-            lastActive: "2023-12-10",
-        },
-    ];
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [dataUser, setDataUser] = useState<UserData[]>(null);
+    const [totalMembers, setTotalMembers] = useState(0);
+    const [selectedUser, setSelectedUser] = useState<UserData>(null);
+    const { toast } = useToast();
+    
 
     const totalFiles = uploadedFiles.length;
-    const totalMembers = mockMemberUsers.length;
     const recentActivityCount = totalFiles;
 
     const userColumns = [
-        { key: "name", header: "Tên", filterable: true },
-        { key: "email", header: "Email", filterable: true },
+        { key: "fullname", header: "Tên", filterable: true },
+        { key: "username", header: "Username", filterable: true },
         {
             key: "role",
             header: "Vai trò",
             filterable: true,
-            filterOptions: ["ADMIN", "MEMBER"],
+            filterOptions: ["admin", "member"],
             render: (value: UserRole) => (
                 <Badge
                     variant={value === UserRole.ADMIN ? "default" : "secondary"}
@@ -93,6 +79,96 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
             render: (value: number) => `${(value / 1024).toFixed(2)} KB`,
         },
     ];
+
+    const callAPIAddUser = async (userData: any) => {
+        const params: UserParam = {
+            username: userData.username,
+            fullname: userData.fullname,
+            password: userData.password,
+            role: userData.role,
+        };
+        const res = await addNewUser(params);
+        if (res && res.success) {
+            setIsDialogOpen(false);
+            toast({
+                title: "Thêm người dùng thành công",
+                description: `Người dùng ${userData.username} đã được thêm thành công.`,
+            });
+        }
+        if (res && !res.success) {
+            toast({
+                title: "Thêm người dùng thất bại",
+                description: res.message,
+                variant: "destructive",
+            });
+        }
+    }
+
+    const callAPIUpdateUser = async (userData: any) => {
+        const params: any = {
+            id: selectedUser.id,
+            username: userData.username,
+            fullname: userData.fullname,
+            password: userData.password,
+            role: userData.role,
+        };
+        const res = await updateUserInfo(params);
+        if (res && res.success) {
+            setIsDialogOpen(false);
+            toast({
+                title: "Cập nhật người dùng thành công",
+                description: `Người dùng ${userData.username} đã được cập nhật thành công.`,
+            });
+        }
+        if (res && !res.success) {
+            toast({
+                title: "Cập nhật người dùng thất bại",
+                description: res.message,
+                variant: "destructive",
+            });
+        }
+    }
+
+    const handleSubmit = async (userData: any) => {
+        setIsLoading(true);
+        if (selectedUser) {
+            // Update existing user
+            consoleLogUtil("Update user", selectedUser);
+            await callAPIUpdateUser(userData);
+        } else {
+            // Add new user
+            await callAPIAddUser(userData);
+        }
+        setIsLoading(false);
+    }
+
+    const getDataUsers = async () => {
+        setIsLoading(true);
+        const param: any = {
+            page: 1,
+            limit: 10,
+            keyword: "",
+        }
+        const res = await getAllUsers(param);
+        setIsLoading(false);
+        consoleLogUtil("getAllUsers", res.data.users);
+        if (res && res.success) {
+            setDataUser([...res.data.users ?? []]);
+            setTotalMembers(res.data.pagination.totalItems);
+        }
+        if (res && !res.success) {
+            toast({
+                title: "Lỗi",
+                description: res.message,
+                variant: "destructive",
+            });
+        }
+    }
+
+    useEffect(() => {
+        getDataUsers();
+    }
+    , []);
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
@@ -170,10 +246,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                     <CardTitle>Tổng quan hệ thống</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <p>
-                                        Chào mừng {" "}
-                                        {user?.fullname ?? ''}!
-                                    </p>
+                                    <p>Chào mừng {user?.fullname ?? ""}!</p>
                                     <p className="text-gray-500 mt-2">
                                         Hệ thống hiện có {totalMembers} thành
                                         viên và {totalFiles} files. Có{" "}
@@ -188,18 +261,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <CardHeader>
                                     <CardTitle>
                                         Quản lý người dùng
-                                        <Button
-                                            variant="outline"
-                                            className="ml-auto buton-add-user"
+                                        <Dialog.Root
+                                            open={isDialogOpen}
+                                            onOpenChange={setIsDialogOpen}
                                         >
-                                            <PlusCircle className="mr-2" />
-                                            Thêm người dùng
-                                        </Button>
+                                            <Button
+                                                variant="outline"
+                                                className="ml-auto"
+                                                onClick={() => {
+                                                    setIsDialogOpen(true)
+                                                    setSelectedUser(null)
+                                                }}
+                                            >
+                                                <PlusCircle className="mr-2" />
+                                                Thêm người dùng
+                                            </Button>
+
+                                            <UserFormModal onSubmit={handleSubmit} initialData={selectedUser}/>
+                                        </Dialog.Root>
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
                                     <DataTable
-                                        data={mockMemberUsers}
+                                        data={dataUser ?? []}
                                         columns={userColumns}
                                         filterableColumns={[
                                             "name",
@@ -208,6 +292,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                             "filesUploaded",
                                             "lastActive",
                                         ]}
+                                        onRowClick={(row: UserData) => {
+                                            setSelectedUser(row)
+                                            setIsDialogOpen(true)
+                                        }}
                                     />
                                 </CardContent>
                             </Card>

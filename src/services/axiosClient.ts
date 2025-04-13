@@ -20,6 +20,7 @@ function apiLogger(msg, color, params) {
 axiosClient.interceptors.request.use(
     async config => {
         const token = TokenProvider.getToken();
+        consoleLogUtil("token", token);
         if (token) {
             config.headers.Authorization = 'Bearer ' + token;
         }
