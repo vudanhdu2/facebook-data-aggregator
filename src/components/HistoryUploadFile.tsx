@@ -22,6 +22,7 @@ import { getDetailDataFileById, getHistoryUploadByUser } from "@/services/apis";
 import { useAuth } from "@/contexts/AuthContext";
 import { HistoryResponse } from "@/models/history/HistoryResponse";
 import { FileDetail } from "@/models/history/FileDetail";
+import { useSelector } from "react-redux";
 
 const HistoryUploadFile: React.FC = () => {
     const [userFiles, setUserFiles] = useState<any[]>([]);
@@ -36,6 +37,8 @@ const HistoryUploadFile: React.FC = () => {
     const [aggregatedData, setAggregatedData] = useState<AggregatedUserData[]>([]);
     const { toast } = useToast();
     const { user } = useAuth();
+    const userReducer = useSelector((state: any) => state.user);
+    console.log("userReducer", userReducer);
     const historyColumns = [
         { key: "name", header: "Tên file", filterable: true },
         { key: "type", header: "Loại dữ liệu", filterable: true },

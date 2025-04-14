@@ -115,6 +115,13 @@ export enum MODE_API_IMPORT {
   GROUP = 'group',
   DEFAULT = 'default',
 }
+
+export enum TYPE_API_IMPORT {
+  ENTITIES = 'entities',
+  COMMENTS = 'comments',
+  LIKES = 'likes',
+  SHARES = 'shares',
+}
 export interface UIDSource {
   fileName: string;
   fileType: FacebookDataType;

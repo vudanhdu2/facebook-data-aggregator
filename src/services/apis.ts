@@ -51,6 +51,10 @@ export const importFileGroupEntities = (params: ImportUIDParam) : Promise<Respon
     return axiosClient.post('entities/importGroup', params);
 }
 
-export const importFileimportGeneralEntities = (params: ImportUIDParam) : Promise<ResponseBase<ImportResponse>> => {
+export const importFileGeneralEntities = (params: ImportUIDParam) : Promise<ResponseBase<ImportResponse>> => {
     return axiosClient.post('entities/importGeneral', params);
+}
+
+export const importFileComments = (params: ImportUIDParam) : Promise<ResponseBase<ImportResponse>> => {
+    return axiosClient.post('comments/importComments', params);
 }

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle, Calendar, UserCircle, FileText, Users, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA_SOURCE_OPTIONS, MODE_API_IMPORT } from '@/types';
+import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA_SOURCE_OPTIONS, MODE_API_IMPORT, TYPE_API_IMPORT } from '@/types';
 import { formatUID, readExcelFile } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ import { createDemoData } from '@/utils/demoData';
 import { v4 as uuidv4 } from 'uuid';
 import { FileTypeImport } from '@/models/import/FileTypeImport';
 import { AccountType } from '@/models/import/AccountType';
-import { getAllAccountType, getAllFileTypeImport, importFileEntities, importFileGroupEntities, importFileimportGeneralEntities } from '@/services/apis';
+import { getAllAccountType, getAllFileTypeImport, importFileEntities, importFileGroupEntities, importFileGeneralEntities, importFileComments } from '@/services/apis';
 import { consoleLogUtil } from '@/utils/consoleLogUtil';
 import { AlertDialog, Flex } from "@radix-ui/themes"
 
@@ -336,28 +336,34 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       // TÌM UID VOTE BÀI VIẾT
       case FacebookDataType.POST_VOTERS: // TÌM UID VOTE BÀI VIẾT
       case FacebookDataType.INTERACTION_ON_ENTITY: // TÌM UID LIKE , cmt, share , đc tag trong cmt TRONG ID PAGE , GROUP hoăc Link
-        handleUploadUIDs(selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT);
+        handleUploadUIDs(selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.ENTITIES);
         break;
       // TÌM UID LIKE CMT SHARE BÀI VIẾT
       case FacebookDataType.INTERACTION_ON_POST: // TÌM UID LIKE , cmt, share , đc tag trong cmt TRONG ID BÀI
-        handleUploadUIDs(selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT);
+        handleUploadUIDs(selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.ENTITIES);
         break;
       //TÌM ID EVENT THEO TỪ KHÓA
       case FacebookDataType.SEARCH_EVENTS_BY_KEYWORD: // TÌM ID EVENT THEO TỪ KHÓA
-        handleUploadUIDs(selectedFileType, DataSourceType.EVENT, MODE_API_IMPORT.DEFAULT);
+        handleUploadUIDs(selectedFileType, DataSourceType.EVENT, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.ENTITIES);
         break;
       // TÌM ID PLace theo TỪ KHÓA
       case FacebookDataType.SEARCH_PLACES_BY_KEYWORD: // TÌM ID PLace theo TỪ KHÓA
-        handleUploadUIDs(selectedFileType, DataSourceType.PLACE, MODE_API_IMPORT.DEFAULT);
+        handleUploadUIDs(selectedFileType, DataSourceType.PLACE, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.ENTITIES);
         break;
       case FacebookDataType.GROUPS_JOINED_BY_UID: // TÌM ID NHÓM ĐÃ THAM GIA CỦA UID
-        handleUploadUIDs(selectedFileType, DataSourceType.GROUP, MODE_API_IMPORT.GROUP);    
+        handleUploadUIDs(selectedFileType, DataSourceType.GROUP, MODE_API_IMPORT.GROUP, TYPE_API_IMPORT.ENTITIES);
+        break;
+
+      // Mục Quét nội dung comment
+      case FacebookDataType.COMMENT_STATS_ON_LINK: //THỐNG KÊ CMT TRONG LINK BÀI VIẾT
+        handleUploadUIDs(selectedFileType, DataSourceType.GROUP, MODE_API_IMPORT.GROUP, TYPE_API_IMPORT.COMMENTS);
+        break;       
       default:
         break;
     }
 
   };
-  const handleUploadUIDs = async (relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT) => {
+  const handleUploadUIDs = async (relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT, type_api: TYPE_API_IMPORT) => {
     const uid = sourceUID.trim();
 
     if (!uid) {
@@ -365,11 +371,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       return;
     }
 
-    await processUpload(uid, relation_type, type, mode);
+    await processUpload(uid, relation_type, type, mode, type_api);
     
   }
   
-  const processUpload = async (uid: string | null, relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT) => {
+  const processUpload = async (uid: string | null, relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT, type_api: TYPE_API_IMPORT) => {
     setIsProcessing(true);
     const file = files[0];
     const payload = {
@@ -387,34 +393,71 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     };
   
     console.log(payload);
-    const res = await importFileimportGeneralEntities(payload);
-    // switch (type_api) {
-    //   case MODE_API_IMPORT.IMPORT_PROFILE_ENTITIES:
-    //     res = await importFileEntities(payload);
-    //     break;
-    //   case MODE_API_IMPORT.IMPORT_GROUP_ENTITIES:
-    //     res = await importFileGroupEntities(payload);
-    //   default:
-    //     break;
-    // }
-    setIsProcessing(false);
-    if (res?.success) {
-      setFiles([]);
-      onFilesUploaded([]);
-      toast({
-        title: "Đã tải lên thành công",
-        description: `Đã tải ${res.data.inserted.length} dòng, trùng ${res.data.skipped.length} dòng.`,
-      });
-    } else {
-      consoleLogUtil("Error uploading file", file);
-      toast({
-        title: "Lỗi tải lên",
-        description: res?.message || "Đã xảy ra lỗi khi tải lên file.",
-        variant: "destructive",
-      });
+    switch (type_api) {
+      case TYPE_API_IMPORT.ENTITIES:
+        callAPIImportEntities(payload);
+        break;
+      case TYPE_API_IMPORT.COMMENTS:
+        callAPIImportComments(payload);
+      default:
+        break;
     }
+    
   };
   
+  const callAPIImportEntities = async (payload: any) => {
+    try {
+      setIsProcessing(true);
+      const res = await importFileGeneralEntities(payload);
+      setIsProcessing(false);
+      if (res?.success) {
+        toast({
+          title: "Đã tải lên thành công",
+          description: `Đã tải ${res.data.inserted.length} dòng, trùng ${res.data.skipped.length} dòng.`,
+        });
+      } else {
+        consoleLogUtil("Error uploading file", payload);
+        toast({
+          title: "Lỗi tải lên",
+          description: res?.message || "Đã xảy ra lỗi khi tải lên file.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      
+    } finally {
+      setIsProcessing(false);
+      setFiles([]);
+      onFilesUploaded([]);
+    }
+  }
+
+  const callAPIImportComments = async (payload: any) => {
+    try {
+      setIsProcessing(true);
+      const res = await importFileComments(payload);
+      setIsProcessing(false);
+      if (res?.success) {
+        toast({
+          title: "Đã tải lên thành công",
+          description: `Đã tải ${res.data.inserted.length} dòng, trùng ${res.data.skipped.length} dòng.`,
+        });
+      } else {
+        consoleLogUtil("Error uploading file", payload);
+        toast({
+          title: "Lỗi tải lên",
+          description: res?.message || "Đã xảy ra lỗi khi tải lên file.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      
+    } finally {
+      setIsProcessing(false);
+      setFiles([]);
+      onFilesUploaded([]);
+    }
+  }
 
   const getFacebookDataTypeLabel = (type: FacebookDataType): string => {
     const option = FILE_TYPE_OPTIONS.find(opt => opt.value === type);
