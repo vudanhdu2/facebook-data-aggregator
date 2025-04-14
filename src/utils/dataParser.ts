@@ -77,18 +77,17 @@ export const formatUID = (dataRows: string[][], uidIndex: number) => {
   const parsed: string[][] = [];
 
   for (const row of dataRows) {
-    if (!row || row.length < 2) continue;
+    if (!row || row.length <= uidIndex) continue;
 
-    const rawUid = row[uidIndex];
-
+    const rawUid = row[uidIndex]?.trim();
     if (!rawUid) continue;
 
-    // Tách phần UID sau dấu chấm
     const parts = rawUid.split('.');
     if (parts.length < 2) continue;
 
-    const uid = parts.slice(1).join('.').trim();
-    if (!/^\d+$/.test(uid)) continue;
+    const uid = parts.slice(1).join('.').trim(); // lấy phần sau dấu chấm
+    if (!uid) continue;
+
     row[uidIndex] = uid;
     parsed.push(row);
   }

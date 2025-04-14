@@ -301,8 +301,41 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     }
     
     switch (selectedFileType) {
+      // Mục tìm UID bạn bè
       case FacebookDataType.FRIENDS: // Tìm uid bạn bè
-        handleUploadUIDFriends();
+      case FacebookDataType.NEW_FRIENDS: // Bạn bè mới thêm
+      case FacebookDataType.REQUEST_FRIENDS: // UID đã gửi yêu cầu kết bạn
+      case FacebookDataType.FOLLOWING: // TÌm UId following
+      case FacebookDataType.FOLLOWERS: // TÌm uid followers
+      // Mục tìm UID thành viên nhóm
+      case FacebookDataType.GROUP_MEMBERS: // Tìm thành viên nhóm
+      case FacebookDataType.GROUP_COMMON_INTERESTS: // Tìm thành viên nhóm có điểm chung
+      case FacebookDataType.GROUP_MEMBER_FRIENDS: // Tìm bạn bè trong nhóm
+      case FacebookDataType.GROUP_NEARBY_MEMBERS: // Tìm uid thành viên gần
+      case FacebookDataType.GROUP_MUTUAL_FRIENDS: // Tìm uid thành viên có bạn chung
+      case FacebookDataType.GROUP_FILTERED_MEMBERS: // Tìm uid  nhiều điều kiện
+      case FacebookDataType.GROUP_TOP_CONTRIBUTORS: // Tìm uid thành viên đóng góp nhiều
+      //Mục tìm ID Profile Group Page
+      case FacebookDataType.SEARCH_GROUPS_BY_KEYWORD: // Tìm uid nhóm theo từ khóa
+      case FacebookDataType.SEARCH_PAGES_BY_KEYWORD: // Tìm uid page theo từ khóa
+      case FacebookDataType.SEARCH_PROFILES_BY_KEYWORD: // Tìm uid profile theo từ khóa
+      case FacebookDataType.PAGES_LIKED_BY_UID: // TÌM ID PAGE ĐÃ LIKE CỦA UID
+      case FacebookDataType.PAGES_CHECKEDIN_BY_UID: // TÌM ID PAGE ĐÃ CHECKIN CỦA UID
+      case FacebookDataType.RELATED_PAGES: // Tìm ID page liên quan
+      case FacebookDataType.PAGE_LIKERS: // Tìm UID người đã like page
+      case FacebookDataType.PAGE_TOP_FANS: // Tìm UID fan cứng
+      // Mục TÌM UID THAM GIA EVENT
+      case FacebookDataType.EVENT_ATTENDEES: // Tìm UID tham gia Event
+      case FacebookDataType.EVENT_COMMENTERS: // Tìm UID comment Event
+      case FacebookDataType.EVENT_INTERESTED: // Tìm UID quan tâm Event
+      case FacebookDataType.EVENT_INVITEES: // Tìm UID đã mời tham gia Event
+      // TÌM UID ADMIN NHÓM
+      case FacebookDataType.GROUP_APPROVERS: // Tìm UID chấp thuận trước
+      // TIÌM UID THÀNH VIÊN NHÓM CHÁT
+      case FacebookDataType.GROUP_CHAT_MEMBERS: // Tìm UID thành viên nhóm chat
+      // TÌM UID VOTE BÀI VIẾT
+      case FacebookDataType.POST_VOTERS: // TÌM UID VOTE BÀI VIẾT
+        handleUploadUIDs(selectedFileType);
         break;
     
       default:
@@ -310,7 +343,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     }
 
   };
-  const handleUploadUIDFriends = async () => {
+  const handleUploadUIDs = async (relation_type: FacebookDataType) => {
     const uid = sourceUID.trim();
 
     if (!uid) {
@@ -318,11 +351,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       return;
     }
 
-    await processUpload(uid);
+    await processUpload(uid, relation_type);
     
   }
   
-  const processUpload = async (uid: string | null) => {
+  const processUpload = async (uid: string | null, relation_type: FacebookDataType) => {
     setIsProcessing(true);
     const file = files[0];
     const payload = {
@@ -333,7 +366,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       account_type_id: lstAccountType.find(item => item.code === selectedSourceType)?.id,
       file_size: file.size,
       row_count: file.rowCount,
-      relation_type: FacebookDataType.FRIENDS,
+      relation_type: relation_type,
       type: selectedSourceType,
       uids: formatUID(file.data, 0),
     };
@@ -350,6 +383,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         description: `Đã tải ${res.data.inserted.length} dòng, trùng ${res.data.skipped.length} dòng.`,
       });
     } else {
+      consoleLogUtil("Error uploading file", file);
       toast({
         title: "Lỗi tải lên",
         description: res?.message || "Đã xảy ra lỗi khi tải lên file.",
@@ -472,7 +506,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                       color="blue"
                       onClick={() => {
                         setShowConfirmNoUID(false)
-                        processUpload(null) // tiếp tục mà không có UID
+                        processUpload(null, selectedFileType) // tiếp tục mà không có UID
                       }}
                     >
                       Tiếp tục
@@ -550,7 +584,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                             </span>
                           ) : (
                             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                              Nhập UID
+                              {sourceUID || 'Chưa có UID'}
                             </span>
                           )}
                         </Button>
