@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, X, FileSpreadsheet, CheckCircle, AlertCircle, Calendar, UserCircle, FileText, Users, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA_SOURCE_OPTIONS } from '@/types';
+import { UploadedFile, FacebookDataType, FILE_TYPE_OPTIONS, DataSourceType, DATA_SOURCE_OPTIONS, MODE_API_IMPORT } from '@/types';
 import { formatUID, readExcelFile } from '@/utils/dataParser';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ import { createDemoData } from '@/utils/demoData';
 import { v4 as uuidv4 } from 'uuid';
 import { FileTypeImport } from '@/models/import/FileTypeImport';
 import { AccountType } from '@/models/import/AccountType';
-import { getAllAccountType, getAllFileTypeImport, importFileEntities } from '@/services/apis';
+import { getAllAccountType, getAllFileTypeImport, importFileEntities, importFileGroupEntities, importFileimportGeneralEntities } from '@/services/apis';
 import { consoleLogUtil } from '@/utils/consoleLogUtil';
 import { AlertDialog, Flex } from "@radix-ui/themes"
 
@@ -335,15 +335,29 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       case FacebookDataType.GROUP_CHAT_MEMBERS: // Tìm UID thành viên nhóm chat
       // TÌM UID VOTE BÀI VIẾT
       case FacebookDataType.POST_VOTERS: // TÌM UID VOTE BÀI VIẾT
-        handleUploadUIDs(selectedFileType);
+      case FacebookDataType.INTERACTION_ON_ENTITY: // TÌM UID LIKE , cmt, share , đc tag trong cmt TRONG ID PAGE , GROUP hoăc Link
+        handleUploadUIDs(selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT);
         break;
-    
+      // TÌM UID LIKE CMT SHARE BÀI VIẾT
+      case FacebookDataType.INTERACTION_ON_POST: // TÌM UID LIKE , cmt, share , đc tag trong cmt TRONG ID BÀI
+        handleUploadUIDs(selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT);
+        break;
+      //TÌM ID EVENT THEO TỪ KHÓA
+      case FacebookDataType.SEARCH_EVENTS_BY_KEYWORD: // TÌM ID EVENT THEO TỪ KHÓA
+        handleUploadUIDs(selectedFileType, DataSourceType.EVENT, MODE_API_IMPORT.DEFAULT);
+        break;
+      // TÌM ID PLace theo TỪ KHÓA
+      case FacebookDataType.SEARCH_PLACES_BY_KEYWORD: // TÌM ID PLace theo TỪ KHÓA
+        handleUploadUIDs(selectedFileType, DataSourceType.PLACE, MODE_API_IMPORT.DEFAULT);
+        break;
+      case FacebookDataType.GROUPS_JOINED_BY_UID: // TÌM ID NHÓM ĐÃ THAM GIA CỦA UID
+        handleUploadUIDs(selectedFileType, DataSourceType.GROUP, MODE_API_IMPORT.GROUP);    
       default:
         break;
     }
 
   };
-  const handleUploadUIDs = async (relation_type: FacebookDataType) => {
+  const handleUploadUIDs = async (relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT) => {
     const uid = sourceUID.trim();
 
     if (!uid) {
@@ -351,11 +365,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       return;
     }
 
-    await processUpload(uid, relation_type);
+    await processUpload(uid, relation_type, type, mode);
     
   }
   
-  const processUpload = async (uid: string | null, relation_type: FacebookDataType) => {
+  const processUpload = async (uid: string | null, relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT) => {
     setIsProcessing(true);
     const file = files[0];
     const payload = {
@@ -367,14 +381,23 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       file_size: file.size,
       row_count: file.rowCount,
       relation_type: relation_type,
-      type: selectedSourceType,
+      type: type,
       uids: formatUID(file.data, 0),
+      mode: mode,
     };
   
     console.log(payload);
-    const res = await importFileEntities(payload);
+    const res = await importFileimportGeneralEntities(payload);
+    // switch (type_api) {
+    //   case MODE_API_IMPORT.IMPORT_PROFILE_ENTITIES:
+    //     res = await importFileEntities(payload);
+    //     break;
+    //   case MODE_API_IMPORT.IMPORT_GROUP_ENTITIES:
+    //     res = await importFileGroupEntities(payload);
+    //   default:
+    //     break;
+    // }
     setIsProcessing(false);
-  
     if (res?.success) {
       setFiles([]);
       onFilesUploaded([]);

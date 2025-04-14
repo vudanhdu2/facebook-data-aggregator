@@ -111,6 +111,10 @@ export enum DataSourceType {
   GROUP_CHAT = 'GROUP_CHAT',
 }
 
+export enum MODE_API_IMPORT {
+  GROUP = 'group',
+  DEFAULT = 'default',
+}
 export interface UIDSource {
   fileName: string;
   fileType: FacebookDataType;

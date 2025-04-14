@@ -46,3 +46,11 @@ export const getHistoryUploadByUser = (params: any) : Promise<ResponseBase<Histo
 export const getDetailDataFileById = (params: any) : Promise<ResponseBase<DetailFileResponse>> => {
     return axiosClient.post(`entities/by-file`, params);
 }
+
+export const importFileGroupEntities = (params: ImportUIDParam) : Promise<ResponseBase<ImportResponse>> => {
+    return axiosClient.post('entities/importGroup', params);
+}
+
+export const importFileimportGeneralEntities = (params: ImportUIDParam) : Promise<ResponseBase<ImportResponse>> => {
+    return axiosClient.post('entities/importGeneral', params);
+}
