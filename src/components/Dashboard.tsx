@@ -102,31 +102,31 @@ const Dashboard: React.FC = () => {
   }, [aggregatedData]);
 
   const handleFilesUploaded = (files: UploadedFile[]) => {
-    const filesWithUploader = files.map(file => ({
-      ...file,
-      id: file.id || uuidv4(),
-      uploaderId: file.uploaderId || user?.id || 'anonymous',
-      uploaderName: file.uploaderName || user?.fullname || 'Anonymous User'
-    }));
+    // const filesWithUploader = files.map(file => ({
+    //   ...file,
+    //   id: file.id || uuidv4(),
+    //   uploaderId: file.uploaderId || user?.id || 'anonymous',
+    //   uploaderName: file.uploaderName || user?.fullname || 'Anonymous User'
+    // }));
     
-    setUploadedFiles(filesWithUploader);
+    // setUploadedFiles(filesWithUploader);
     
-    try {
-      const aggregated = aggregateDataByUID(filesWithUploader);
-      setAggregatedData(aggregated);
+    // try {
+    //   const aggregated = aggregateDataByUID(filesWithUploader);
+    //   setAggregatedData(aggregated);
       
-      toast({
-        title: "Dữ liệu đã được phân tích",
-        description: `Đã tổng hợp thông tin của ${aggregated.length} người dùng.`,
-      });
-    } catch (error) {
-      console.error("Error aggregating data:", error);
-      toast({
-        title: "Lỗi xử lý dữ liệu",
-        description: "Không thể tổng hợp dữ liệu. Vui lòng kiểm tra định dạng file.",
-        variant: "destructive"
-      });
-    }
+    //   toast({
+    //     title: "Dữ liệu đã được phân tích",
+    //     description: `Đã tổng hợp thông tin của ${aggregated.length} người dùng.`,
+    //   });
+    // } catch (error) {
+    //   console.error("Error aggregating data:", error);
+    //   toast({
+    //     title: "Lỗi xử lý dữ liệu",
+    //     description: "Không thể tổng hợp dữ liệu. Vui lòng kiểm tra định dạng file.",
+    //     variant: "destructive"
+    //   });
+    // }
   };
 
   const clearSavedData = () => {

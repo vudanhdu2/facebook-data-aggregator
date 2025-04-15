@@ -336,6 +336,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       // TÌM UID VOTE BÀI VIẾT
       case FacebookDataType.POST_VOTERS: // TÌM UID VOTE BÀI VIẾT
       case FacebookDataType.INTERACTION_ON_ENTITY: // TÌM UID LIKE , cmt, share , đc tag trong cmt TRONG ID PAGE , GROUP hoăc Link
+      case FacebookDataType.POST_AUTHOR_IDS: // QUÉT ID ĐĂNG BÀI
         handleUploadUIDs(selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.ENTITIES);
         break;
       // TÌM UID LIKE CMT SHARE BÀI VIẾT
@@ -364,6 +365,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
 
       //TÌM UID ADMIN NHÓM         
       case FacebookDataType.GROUP_ADMINS: // Tìm UID admin nhóm
+      debugger
         handleUploadUIDs(selectedFileType, DataSourceType.UID_PROFILE, MODE_API_IMPORT.ADMIN, TYPE_API_IMPORT.ENTITIES);
         break;
       default:
@@ -385,12 +387,25 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
   
   const processUpload = async (uid: string | null, relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT, type_api: TYPE_API_IMPORT) => {
     setIsProcessing(true);
+    let newMode: string;
+    switch (relation_type) {
+      case FacebookDataType.GROUPS_JOINED_BY_UID: // TÌM ID NHÓM ĐÃ THAM GIA CỦA UID
+      case FacebookDataType.COMMENTS_ON_PROFILE_BY_POST_COUNT: // TÌM COMMENT TRÊN PROFILE THEO SỐ BÀI
+        newMode = MODE_API_IMPORT.GROUP;
+        break;
+      case FacebookDataType.GROUP_ADMINS: // Tìm UID admin nhóm
+        newMode = MODE_API_IMPORT.ADMIN;
+        break;
+      default:
+        newMode = MODE_API_IMPORT.DEFAULT;
+        break;
+    }
     const file = files[0];
     consoleLogUtil("File upload", file);
     const uidList = formatUID(file.data, 0);
     const payload = {
       file_name: file.name,
-      uid: mode === MODE_API_IMPORT.ADMIN ? (uid ? uid : (uidList.length > 0 ? uidList[0]?.[2] : null)) : (uid || null),
+      uid: newMode === MODE_API_IMPORT.ADMIN ? (uid ? uid : (uidList.length > 0 ? uidList[0]?.[2] : null)) : (uid || null),
       user_id: file.uploaderId,
       data_type_id: lstFileType.find(item => item.code === selectedFileType)?.id,
       account_type_id: lstAccountType.find(item => item.code === selectedSourceType)?.id,
@@ -398,8 +413,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       row_count: file.rowCount,
       relation_type: relation_type,
       type: type,
-      uids: formatUID(file.data, 0),
-      mode: mode,
+      uids: uidList,
+      mode: newMode,
     };
   
     console.log(payload);
@@ -582,7 +597,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                       color="blue"
                       onClick={() => {
                         setShowConfirmNoUID(false)
-                        processUpload(null, selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.ENTITIES) // tiếp tục mà không có UID
+                        let mode;
+                        if (selectedSourceType === DataSourceType.GROUP) {
+                          mode = MODE_API_IMPORT.GROUP;
+                        } else if (selectedFileType === FacebookDataType.GROUP_ADMINS) {
+                          mode = MODE_API_IMPORT.ADMIN;
+                        } else {
+                          mode = MODE_API_IMPORT.DEFAULT;
+                        }
+                        processUpload(null, selectedFileType, selectedSourceType, mode, TYPE_API_IMPORT.ENTITIES) // tiếp tục mà không có UID
                       }}
                     >
                       Tiếp tục
