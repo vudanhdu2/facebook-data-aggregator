@@ -14,12 +14,12 @@ export async function readExcelFile(file: File): Promise<UploadedFile | null> {
         const workbook = XLSX.read(data, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const dataExcel = handleFormatDataSheet(worksheet);
+        const dataExcel = handleFormatDataSheet(worksheet).filter(row => row[0].length > 0);
         
         if (dataExcel.length > 0) {
           dataExcel.shift(); // Remove header row
         }
-        
+        console.log("Parsed data:", dataExcel);
         resolve({
           id: uuidv4(), // Add a unique ID
           name: file.name,

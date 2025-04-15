@@ -356,8 +356,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
 
       // Mục Quét nội dung comment
       case FacebookDataType.COMMENT_STATS_ON_LINK: //THỐNG KÊ CMT TRONG LINK BÀI VIẾT
+      case FacebookDataType.COMMENTS_ON_PAGE_BY_POST_COUNT: // TÌM COMMENT TRÊN PAGE THEO SỐ BÀI
+      case FacebookDataType.COMMENTS_ON_GROUP_BY_POST_COUNT: // TÌM COMMENT TRÊN GR THEO SỐ BÀI
+      case FacebookDataType.COMMENTS_ON_PROFILE_BY_POST_COUNT: // TÌM COMMENT TRÊN PROFILE THEO SỐ BÀI
         handleUploadUIDs(selectedFileType, DataSourceType.GROUP, MODE_API_IMPORT.GROUP, TYPE_API_IMPORT.COMMENTS);
-        break;       
+        break;
+
+      //TÌM UID ADMIN NHÓM         
+      case FacebookDataType.GROUP_ADMINS: // Tìm UID admin nhóm
+        handleUploadUIDs(selectedFileType, DataSourceType.UID_PROFILE, MODE_API_IMPORT.ADMIN, TYPE_API_IMPORT.ENTITIES);
+        break;
       default:
         break;
     }
@@ -378,9 +386,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
   const processUpload = async (uid: string | null, relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT, type_api: TYPE_API_IMPORT) => {
     setIsProcessing(true);
     const file = files[0];
+    consoleLogUtil("File upload", file);
+    const uidList = formatUID(file.data, 0);
     const payload = {
       file_name: file.name,
-      uid: uid || null,
+      uid: mode === MODE_API_IMPORT.ADMIN ? (uid ? uid : (uidList.length > 0 ? uidList[0]?.[2] : null)) : (uid || null),
       user_id: file.uploaderId,
       data_type_id: lstFileType.find(item => item.code === selectedFileType)?.id,
       account_type_id: lstAccountType.find(item => item.code === selectedSourceType)?.id,
@@ -572,7 +582,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                       color="blue"
                       onClick={() => {
                         setShowConfirmNoUID(false)
-                        processUpload(null, selectedFileType) // tiếp tục mà không có UID
+                        processUpload(null, selectedFileType, selectedSourceType, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.ENTITIES) // tiếp tục mà không có UID
                       }}
                     >
                       Tiếp tục

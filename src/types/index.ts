@@ -114,6 +114,7 @@ export enum DataSourceType {
 export enum MODE_API_IMPORT {
   GROUP = 'group',
   DEFAULT = 'default',
+  ADMIN = 'admin',
 }
 
 export enum TYPE_API_IMPORT {
