@@ -122,6 +122,7 @@ export enum TYPE_API_IMPORT {
   COMMENTS = 'comments',
   LIKES = 'likes',
   SHARES = 'shares',
+  POSTS = 'posts'
 }
 export interface UIDSource {
   fileName: string;

@@ -1,4 +1,4 @@
-export interface ImportResponse {
+export interface ImportPostResponse {
     uploaded_file_id: number
     inserted_count: number
     skipped_count: number

@@ -32,7 +32,7 @@ import { createDemoData } from '@/utils/demoData';
 import { v4 as uuidv4 } from 'uuid';
 import { FileTypeImport } from '@/models/import/FileTypeImport';
 import { AccountType } from '@/models/import/AccountType';
-import { getAllAccountType, getAllFileTypeImport, importFileEntities, importFileGroupEntities, importFileGeneralEntities, importFileComments } from '@/services/apis';
+import { getAllAccountType, getAllFileTypeImport, importFileEntities, importFileGroupEntities, importFileGeneralEntities, importFileComments, importFilePosts } from '@/services/apis';
 import { consoleLogUtil } from '@/utils/consoleLogUtil';
 import { AlertDialog, Flex } from "@radix-ui/themes"
 
@@ -98,12 +98,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
           result.type = manualType;
           result.manualType = true;
         }
-        
+
         result.sourceType = selectedSourceType;
         if (sourceUID.trim()) {
           result.sourceUID = sourceUID.trim();
         }
-        
+
         if (user) {
           result.uploaderId = user.id;
           result.uploaderName = user.fullname;
@@ -111,9 +111,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
           result.uploaderId = 0;
           result.uploaderName = "Anonymous User";
         }
-        
+
         result.id = uuidv4();
-        
+
         return result;
       }
     } catch (error) {
@@ -131,11 +131,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     e.preventDefault();
     setIsDragging(false);
     setIsProcessing(true);
-    
+
     const newFiles = [e.dataTransfer.files[0]].filter(
       file => file.name.endsWith('.xls') || file.name.endsWith('.xlsx')
     );
-    
+
     if (newFiles.length === 0) {
       toast({
         title: "Định dạng không hỗ trợ",
@@ -145,12 +145,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       setIsProcessing(false);
       return;
     }
-    
+
     const processedFiles = await Promise.all(
       newFiles.map(file => processFile(file, selectedFileType || undefined))
     );
     const validFiles = processedFiles.filter(Boolean) as UploadedFile[];
-    
+
     if (files.length > 0) {
       toast({
         title: "Đã thay thế file cũ",
@@ -159,7 +159,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     }
     setFiles(validFiles);
     onFilesUploaded(validFiles);
-    
+
     setIsProcessing(false);
     toast({
       title: "Tải lên thành công",
@@ -169,12 +169,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
 
   const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
-    
+
     setIsProcessing(true);
     const newFiles = [e.target.files[0]].filter(
       file => file.name.endsWith('.xls') || file.name.endsWith('.xlsx')
     );
-    
+
     if (newFiles.length === 0) {
       toast({
         title: "Định dạng không hỗ trợ",
@@ -184,8 +184,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       setIsProcessing(false);
       return;
     }
-    
-    
+
+
 
     const processedFiles = await Promise.all(
       newFiles.map(file => processFile(file, selectedFileType || undefined))
@@ -201,7 +201,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     onFilesUploaded(validFiles);
     setIsProcessing(false);
     e.target.value = '';
-    
+
     toast({
       title: "Tải lên thành công",
       description: `Đã tải lên ${validFiles.length} file dữ liệu Facebook.`
@@ -222,42 +222,42 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       type: newType,
       manualType: true
     };
-    
+
     setFiles(updatedFiles);
     onFilesUploaded(updatedFiles);
-    
+
     toast({
       title: "Đã cập nhật loại dữ liệu",
       description: `File "${files[fileIndex].name}" đã được cập nhật thành ${getFacebookDataTypeLabel(newType)}`
     });
   };
-  
+
   const updateSourceType = (fileIndex: number, newSourceType: DataSourceType) => {
     const updatedFiles = [...files];
     updatedFiles[fileIndex] = {
       ...updatedFiles[fileIndex],
       sourceType: newSourceType
     };
-    
+
     setFiles(updatedFiles);
     onFilesUploaded(updatedFiles);
-    
+
     toast({
       title: "Đã cập nhật nguồn dữ liệu",
       description: `File "${files[fileIndex].name}" đã được cập nhật thành ${getDataSourceTypeLabel(newSourceType)}`
     });
   };
-  
+
   const updateSourceUID = (fileIndex: number, newUID: string) => {
     const updatedFiles = [...files];
     updatedFiles[fileIndex] = {
       ...updatedFiles[fileIndex],
       sourceUID: newUID.trim() || undefined
     };
-    
+
     setFiles(updatedFiles);
     onFilesUploaded(updatedFiles);
-    
+
     toast({
       title: "Đã cập nhật UID nguồn",
       description: `File "${files[fileIndex].name}" đã được cập nhật với UID: ${newUID || 'Không có'}`
@@ -266,7 +266,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
 
   const handleUploadFile = () => {
     console.log("Upload file clicked ", selectedSourceType);
-    
+
     if (!selectedFileType) {
       toast({
         title: "Chưa chọn loại dữ liệu",
@@ -299,7 +299,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       });
       return;
     }
-    
+
     switch (selectedFileType) {
       // Mục tìm UID bạn bè
       case FacebookDataType.FRIENDS: // Tìm uid bạn bè
@@ -365,7 +365,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
 
       //TÌM UID ADMIN NHÓM         
       case FacebookDataType.GROUP_ADMINS: // Tìm UID admin nhóm
-      debugger
+        debugger
         handleUploadUIDs(selectedFileType, DataSourceType.UID_PROFILE, MODE_API_IMPORT.ADMIN, TYPE_API_IMPORT.ENTITIES);
         break;
       default:
@@ -382,9 +382,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     }
 
     await processUpload(uid, relation_type, type, mode, type_api);
-    
+
   }
-  
+
   const processUpload = async (uid: string | null, relation_type: FacebookDataType, type: DataSourceType, mode: MODE_API_IMPORT, type_api: TYPE_API_IMPORT) => {
     setIsProcessing(true);
     let newMode: string;
@@ -416,7 +416,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       uids: uidList,
       mode: newMode,
     };
-  
+
     console.log(payload);
     switch (type_api) {
       case TYPE_API_IMPORT.ENTITIES:
@@ -424,12 +424,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         break;
       case TYPE_API_IMPORT.COMMENTS:
         callAPIImportComments(payload);
+        break;
+      case TYPE_API_IMPORT.POSTS:
+        callAPIImportPosts(payload);
+        break;
       default:
         break;
     }
-    
+
   };
-  
+
   const callAPIImportEntities = async (payload: any) => {
     try {
       setIsProcessing(true);
@@ -449,14 +453,55 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         });
       }
     } catch (error) {
-      
+
     } finally {
       setIsProcessing(false);
       setFiles([]);
       onFilesUploaded([]);
     }
   }
+  const formatUIDPost = (dataRows: any[][], source_id: string, source_file_id: number) => {
+    if (!dataRows || dataRows.length === 0) return [];
+    const parsed = dataRows.map(item => {
+      if (/^[^_]+_[^_]+$/.test(item[0])) {
+        const author_uid = item[0].split('_')[0];
+        return [item[0], source_id, author_uid, source_id, item[1], item[5], '', source_file_id, item[2], item[3], item[4]];
+      }
+      return item; // giữ nguyên nếu không khớp
+    });
+    
+  }
+  const callAPIImportPosts = async (payload: any) => {
+    const uidPosts = formatUIDPost(payload.uids, 0);
+    const newPayload = {
+      ...payload,
+      uids: uidPosts,
+    };
+    try {
+      setIsProcessing(true);
+      const res = await importFilePosts(newPayload);
+      setIsProcessing(false);
+      if (res?.success) {
+        toast({
+          title: "Đã tải lên thành công",
+          description: `Đã tải ${res.data.inserted_count} dòng, trùng ${res.data.skipped_count} dòng.`,
+        });
+      } else {
+        consoleLogUtil("Error uploading file", newPayload);
+        toast({
+          title: "Lỗi tải lên",
+          description: res?.message || "Đã xảy ra lỗi khi tải lên file.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
 
+    } finally {
+      setIsProcessing(false);
+      setFiles([]);
+      onFilesUploaded([]);
+    }
+  }
   const callAPIImportComments = async (payload: any) => {
     try {
       setIsProcessing(true);
@@ -476,7 +521,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         });
       }
     } catch (error) {
-      
+
     } finally {
       setIsProcessing(false);
       setFiles([]);
@@ -488,12 +533,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     const option = FILE_TYPE_OPTIONS.find(opt => opt.value === type);
     return option ? option.label : 'Không xác định';
   };
-  
+
   const getDataSourceTypeLabel = (type: DataSourceType): string => {
     const option = DATA_SOURCE_OPTIONS.find(opt => opt.value === type);
     return option ? option.label : 'Hồ sơ người dùng';
   };
-  
+
   const getSourceTypeIcon = (sourceType: DataSourceType) => {
     switch (sourceType) {
       case DataSourceType.UID_PROFILE:
@@ -510,7 +555,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     getDataFileType();
     getDataAccountType();
   }
-  , []);
+    , []);
   return (
     <div className="space-y-4 w-full">
       <Card>
@@ -532,7 +577,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                   ))}
                 </SelectContent>
               </Select>
-              
+
               <Select
                 value={selectedSourceType}
                 onValueChange={(value) => setSelectedSourceType(value as DataSourceType)}
@@ -548,15 +593,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                   ))}
                 </SelectContent>
               </Select>
-              
+
               <div className="sm:col-span-2">
-                <Input 
-                  placeholder="Nhập UID nguồn (nếu có)" 
+                <Input
+                  placeholder="Nhập UID nguồn (nếu có)"
                   value={sourceUID}
                   onChange={(e) => setSourceUID(e.target.value)}
                   className="mb-3"
                 />
-                
+
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <Button
                     variant="outline"
@@ -567,7 +612,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                     <Upload className="h-4 w-4 mr-2" />
                     Chọn file
                   </Button>
-                  
+
                   <Button
                     variant="secondary"
                     onClick={handleUploadFile}
@@ -691,15 +736,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                       <PopoverContent className="w-56 p-3">
                         <div className="space-y-2">
                           <h4 className="font-medium text-sm">UID Nguồn</h4>
-                          <Input 
-                            placeholder="Nhập UID" 
+                          <Input
+                            placeholder="Nhập UID"
                             defaultValue={file.sourceUID || ''}
                             onChange={(e) => updateSourceUID(index, e.target.value)}
                           />
                         </div>
                       </PopoverContent>
                     </Popover>
-                    
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
@@ -712,7 +757,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                         <DropdownMenuLabel>Chọn loại dữ liệu</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {FILE_TYPE_OPTIONS.map((option) => (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             key={option.value}
                             onClick={() => updateFileType(index, option.value)}
                             className={file.type === option.value ? "bg-primary/10" : ""}
@@ -722,7 +767,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-8 px-2 gap-1">
@@ -736,7 +781,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                         <DropdownMenuLabel>Chọn nguồn dữ liệu</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {DATA_SOURCE_OPTIONS.map((option) => (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             key={option.value}
                             onClick={() => updateSourceType(index, option.value)}
                             className={file.sourceType === option.value ? "bg-primary/10" : ""}
@@ -746,15 +791,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    
+
                     {file.processed ? (
                       <CheckCircle className="h-5 w-5 text-green-500" />
                     ) : (
                       <AlertCircle className="h-5 w-5 text-amber-500" />
                     )}
-                    
-                    <Button 
-                      variant="ghost" 
+
+                    <Button
+                      variant="ghost"
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
