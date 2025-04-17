@@ -57,3 +57,22 @@ export const formatFileSize = (bytes: number): string => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 };
+
+export function getNumber(text: string): number {
+  if (!text) {
+    return 0;
+  }
+  const match = text.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
+export function convertToTimestamp(dateString: string): string {
+  // Chuỗi ban đầu: "3/11/2025 11:26 AM"
+  const parsed = dayjs(dateString, 'M/D/YYYY h:mm A');
+
+  if (!parsed.isValid()) {
+    return null;
+  }
+
+  return parsed.format('YYYY-MM-DD HH:mm:ss');
+}

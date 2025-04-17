@@ -35,6 +35,7 @@ import { AccountType } from '@/models/import/AccountType';
 import { getAllAccountType, getAllFileTypeImport, importFileEntities, importFileGroupEntities, importFileGeneralEntities, importFileComments, importFilePosts } from '@/services/apis';
 import { consoleLogUtil } from '@/utils/consoleLogUtil';
 import { AlertDialog, Flex } from "@radix-ui/themes"
+import { convertToTimestamp, getNumber } from '@/utils/funcHelper';
 
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void;
@@ -368,6 +369,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         debugger
         handleUploadUIDs(selectedFileType, DataSourceType.UID_PROFILE, MODE_API_IMPORT.ADMIN, TYPE_API_IMPORT.ENTITIES);
         break;
+      case FacebookDataType.POSTS_BY_PAGE_ID: // TÌM UID ĐĂNG BÀI TRONG PAGE
+        handleUploadUIDs(selectedFileType, DataSourceType.PAGE, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.POSTS); 
       default:
         break;
     }
@@ -460,22 +463,28 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       onFilesUploaded([]);
     }
   }
-  const formatUIDPost = (dataRows: any[][], source_id: string, source_file_id: number) => {
+  const formatUIDPost = (dataRows: any[][], source_id: string) => {
     if (!dataRows || dataRows.length === 0) return [];
     const parsed = dataRows.map(item => {
       if (/^[^_]+_[^_]+$/.test(item[0])) {
         const author_uid = item[0].split('_')[0];
-        return [item[0], source_id, author_uid, source_id, item[1], item[5], '', source_file_id, item[2], item[3], item[4]];
+        return [item[0], item[1], convertToTimestamp(item[5]), '', author_uid, source_id, getNumber(item[2]), getNumber(item[3]), getNumber(item[4])];
       }
       return item; // giữ nguyên nếu không khớp
     });
-    
+    return parsed;
   }
   const callAPIImportPosts = async (payload: any) => {
-    const uidPosts = formatUIDPost(payload.uids, 0);
+    const uidPosts = formatUIDPost(payload.uids, payload.uid);
+    consoleLogUtil("Formatted UID Posts", uidPosts);
     const newPayload = {
-      ...payload,
-      uids: uidPosts,
+      file_name: payload.file_name,
+      uid: payload.uid,
+      user_id: payload.user_id,
+      data_type_id: payload.data_type_id,
+      account_type_id: payload.account_type_id,
+      file_size: payload.file_size,
+      posts: uidPosts,
     };
     try {
       setIsProcessing(true);
