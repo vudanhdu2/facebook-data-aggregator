@@ -11,7 +11,8 @@ import { ImportResponse } from "@/models/import/ImportResponse";
 import { HistoryResponse } from "@/models/history/HistoryResponse";
 import { DetailFileResponse } from "@/models/history/DetailFileResponse";
 import { ImportPostParam } from "@/models/import/ImportPostParam";
-import { ImportPostResponse } from "@/models/import/ImportPostResponse";
+import { ImportCommonResponse } from "@/models/import/ImportPostResponse";
+import { ImportStatsParam } from "@/models/import/ImportStatsParam";
 
 export const doLogin = (params: LoginParams) : Promise<ResponseBase<UserInfo>> => {
     return axiosClient.post('auth/login', params);
@@ -61,6 +62,10 @@ export const importFileComments = (params: ImportUIDParam) : Promise<ResponseBas
     return axiosClient.post('comments/importComments', params);
 }
 
-export const importFilePosts = (params: ImportPostParam) : Promise<ResponseBase<ImportPostResponse>> => {
+export const importFilePosts = (params: ImportPostParam) : Promise<ResponseBase<ImportCommonResponse>> => {
     return axiosClient.post('posts/importPosts', params);
+}
+
+export const importFileStats = (params: ImportStatsParam) : Promise<ResponseBase<ImportCommonResponse>> => {
+    return axiosClient.post('posts/importStats', params);
 }

@@ -32,10 +32,10 @@ import { createDemoData } from '@/utils/demoData';
 import { v4 as uuidv4 } from 'uuid';
 import { FileTypeImport } from '@/models/import/FileTypeImport';
 import { AccountType } from '@/models/import/AccountType';
-import { getAllAccountType, getAllFileTypeImport, importFileEntities, importFileGroupEntities, importFileGeneralEntities, importFileComments, importFilePosts } from '@/services/apis';
+import { getAllAccountType, getAllFileTypeImport, importFileEntities, importFileGroupEntities, importFileGeneralEntities, importFileComments, importFilePosts, importFileStats } from '@/services/apis';
 import { consoleLogUtil } from '@/utils/consoleLogUtil';
 import { AlertDialog, Flex } from "@radix-ui/themes"
-import { convertToTimestamp, getNumber } from '@/utils/funcHelper';
+import { convertToTimestamp, exportSkippedUidsToExcel, getNumber } from '@/utils/funcHelper';
 
 interface FileUploadProps {
   onFilesUploaded: (files: UploadedFile[]) => void;
@@ -369,8 +369,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
         debugger
         handleUploadUIDs(selectedFileType, DataSourceType.UID_PROFILE, MODE_API_IMPORT.ADMIN, TYPE_API_IMPORT.ENTITIES);
         break;
-      case FacebookDataType.POSTS_BY_PAGE_ID: // TÌM UID ĐĂNG BÀI TRONG PAGE
-        handleUploadUIDs(selectedFileType, DataSourceType.PAGE, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.POSTS); 
+      case FacebookDataType.POSTS_BY_PAGE_ID: // QUÉT DANH SÁCH BÀI THEO ID PAGE
+      case FacebookDataType.POSTS_BY_GROUP_ID: // QUÉT DANH SÁCH BÀI THEO ID GROUP
+      case FacebookDataType.POSTS_BY_PROFILE_ID: // QUÉT DANH SÁCH BÀI THEO ID PROFILE
+      case FacebookDataType.POSTS_BY_TAG_ID: // QUÉT DANH SÁCH BÀI THEO ID TAG
+        handleUploadUIDs(selectedFileType, DataSourceType.PAGE, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.POSTS);
+        break;
+      // Mục THỐNG KÊ TƯƠNG TÁC
+      case FacebookDataType.GROUP_POST_STATS: // THỐNG KÊ LƯỢT ĐĂNG CỦA GROUP
+        handleUploadUIDs(selectedFileType, DataSourceType.PAGE, MODE_API_IMPORT.DEFAULT, TYPE_API_IMPORT.STATS);
+        break;
       default:
         break;
     }
@@ -431,6 +439,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       case TYPE_API_IMPORT.POSTS:
         callAPIImportPosts(payload);
         break;
+      case TYPE_API_IMPORT.STATS:
+        callAPIImportStats(payload);
+        break;  
       default:
         break;
     }
@@ -443,6 +454,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       const res = await importFileGeneralEntities(payload);
       setIsProcessing(false);
       if (res?.success) {
+        exportSkippedUidsToExcel(res.data.skipped, 'skipped_uids.xlsx');
         toast({
           title: "Đã tải lên thành công",
           description: `Đã tải ${res.data.inserted.length} dòng, trùng ${res.data.skipped.length} dòng.`,
@@ -468,15 +480,44 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
     const parsed = dataRows.map(item => {
       if (/^[^_]+_[^_]+$/.test(item[0])) {
         const author_uid = item[0].split('_')[0];
-        return [item[0], item[1], convertToTimestamp(item[5]), '', author_uid, source_id, getNumber(item[2]), getNumber(item[3]), getNumber(item[4])];
+        return [item[0], item[1]?.trim(), convertToTimestamp(item[5]), '', author_uid, getNumber(item[2]?.trim()), getNumber(item[3]?.trim()), getNumber(item[4]?.trim())];
       }
-      return item; // giữ nguyên nếu không khớp
+      return [item[0], item[1]?.trim(), convertToTimestamp(item[5]), '', source_id, getNumber(item[2]?.trim()), getNumber(item[3]?.trim()), getNumber(item[4]?.trim())];; // giữ nguyên nếu không khớp
     });
-    return parsed;
+    return parsed
   }
+
+  const callAPIImportStats = async (payload: any) => {
+    const newPayload = {
+      ...payload,
+      stats: payload.uids
+  }
+    try {
+      setIsProcessing(true);
+      const res = await importFileStats(newPayload);
+      setIsProcessing(false);
+      if (res?.success) {
+        exportSkippedUidsToExcel(res.data.skipped_uids, 'skipped_uids.xlsx');
+        toast({
+          title: "Đã tải lên thành công",
+          description: `Đã tải ${res.data.inserted_count} dòng, trùng ${res.data.skipped_count} dòng.`,
+        });
+      } else {
+        consoleLogUtil("Error uploading file", newPayload);
+        toast({
+          title: "Lỗi tải lên",
+          description: res?.message || "Đã xảy ra lỗi khi tải lên file.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading file", error);
+    }
+}
   const callAPIImportPosts = async (payload: any) => {
     const uidPosts = formatUIDPost(payload.uids, payload.uid);
     consoleLogUtil("Formatted UID Posts", uidPosts);
+    const lstUidPostLong = uidPosts.filter(item => item[0] !== undefined && item[0].length > 100).map(item => item[0]);
     const newPayload = {
       file_name: payload.file_name,
       uid: payload.uid,
@@ -484,13 +525,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       data_type_id: payload.data_type_id,
       account_type_id: payload.account_type_id,
       file_size: payload.file_size,
-      posts: uidPosts,
+      posts: uidPosts.filter(item => item[0] !== undefined && item[0].length > 0 && item[0].length < 100 && item[2] !== "0 likes") // bỏ qua các uid post quá dài trên 100 ký tự,
     };
     try {
       setIsProcessing(true);
       const res = await importFilePosts(newPayload);
       setIsProcessing(false);
       if (res?.success) {
+        exportSkippedUidsToExcel([...res.data.skipped_uids, ...lstUidPostLong], 'skipped_uids.xlsx');
         toast({
           title: "Đã tải lên thành công",
           description: `Đã tải ${res.data.inserted_count} dòng, trùng ${res.data.skipped_count} dòng.`,
@@ -517,6 +559,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded }) => {
       const res = await importFileComments(payload);
       setIsProcessing(false);
       if (res?.success) {
+        exportSkippedUidsToExcel(res.data.skipped, 'skipped_uids.xlsx');
         toast({
           title: "Đã tải lên thành công",
           description: `Đã tải ${res.data.inserted.length} dòng, trùng ${res.data.skipped.length} dòng.`,
