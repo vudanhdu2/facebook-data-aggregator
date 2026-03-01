@@ -1,69 +1,30 @@
-# Welcome to your Lovable project
+# LarkSuite Uploader (Markdown + Image)
 
-## Project info
+Ứng dụng React + Vite để:
 
-**URL**: https://lovable.dev/projects/6dce4ace-1e8b-4966-a0f9-e8bff00e1ffd
+- Lấy `tenant_access_token` từ LarkSuite/Feishu Open API.
+- Upload file Markdown (`.md`) qua API file.
+- Upload ảnh (`png/jpg/webp...`) qua API image.
 
-## How can I edit this code?
+## Chạy local
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/6dce4ace-1e8b-4966-a0f9-e8bff00e1ffd) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Mở trình duyệt tại URL Vite hiển thị trong terminal.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Cách dùng nhanh
 
-**Use GitHub Codespaces**
+1. Nhập **App ID** và **App Secret** rồi bấm **Lấy tenant access token**.
+2. Hoặc dán sẵn `tenant_access_token` vào ô token.
+3. Chọn file `.md` và bấm **Upload Markdown**.
+4. Chọn ảnh và bấm **Upload ảnh**.
+5. Xem `file_key` / `image_key` ở phần kết quả.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Lưu ý bảo mật
 
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/6dce4ace-1e8b-4966-a0f9-e8bff00e1ffd) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- Không nên để lộ `app_secret` ở frontend production.
+- Nên triển khai backend/proxy để gọi API token và ký request an toàn hơn.
+- Nếu gặp CORS trong môi trường frontend thuần, hãy chuyển qua backend trung gian.
